@@ -1,0 +1,50 @@
+# Large files
+SDK.zip
+*.zip
+*.apk
+*.aar
+*.so
+*.so.*
+
+# Node modules
+node_modules/
+
+# Build directories
+build/
+dist/
+.cache/
+
+# Flutter build
+**/build/
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# IDE
+.vscode/
+.idea/
+*.iml
+*.iws
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# ML Model files and large binaries (too large for GitHub)
+*.mlmodel
+*.ml
+*.cereal
+*.a
+*.so
+*.so.*
+*.aar
+*.framework/
+*.dylib
+*.lib

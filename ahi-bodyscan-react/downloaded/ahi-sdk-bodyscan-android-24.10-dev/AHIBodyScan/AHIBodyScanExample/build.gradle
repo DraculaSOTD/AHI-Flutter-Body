@@ -1,0 +1,106 @@
+plugins {
+    id 'com.android.application'
+    id 'kotlin-android'
+}
+
+def gradleToolsDir = "${project.getRootDir()}/ahi-sdk-build-tools-android/gradle-scripts"
+apply from: "$gradleToolsDir/utilities.gradle"
+
+android {
+    compileSdk 33
+    def SDK_VERSION_CODE = "cat VERSION.txt".execute().text.trim()
+    defaultConfig {
+        applicationId "com.advancedhumanimaging.sdk.bodyscan.example"
+        minSdk 26
+        targetSdk 33
+        versionCode 1
+        versionName "1.0"
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        vectorDrawables {
+            useSupportLibrary true
+        }
+        buildConfigField 'String', 'SDK_VERSION_CODE', "\"${SDK_VERSION_CODE}\""
+    }
+
+    buildTypes {
+        debug {
+            debuggable true
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.debug
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    kotlinOptions {
+        jvmTarget = '1.8'
+        useIR = true
+    }
+    buildFeatures {
+        compose true
+        viewBinding true
+    }
+    composeOptions {
+        kotlinCompilerExtensionVersion compose_version
+        kotlinCompilerVersion '1.6.10'
+    }
+    packagingOptions {
+        resources {
+            excludes += '/META-INF/{AL2.0,LGPL2.1}'
+        }
+        jniLibs {
+            pickFirsts += ['**/*.so']
+        }
+    }
+}
+
+dependencies {
+    implementation project(':AHIBodyScan')
+    if (localPropertyDefined("ahi_sdk_common_android_local_dir")) {
+        implementation project(":ahi-sdk-common-android")
+    }
+    if (localPropertyDefined("ahi_sdk_multiscan_android_local_dir")) {
+        implementation project(":ahi-sdk-multiscan-android")
+    } else {
+        implementation "com.advancedhumanimaging.sdk:ahi-sdk-multiscan:$getBranchVersion.+"
+    }
+    implementation 'com.chillibits:composenumberpicker:1.1.0'
+    implementation 'androidx.core:core-ktx:1.9.0'
+    implementation 'androidx.appcompat:appcompat:1.6.0'
+    implementation 'com.google.android.material:material:1.7.0'
+    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.5.1'
+    implementation "com.google.accompanist:accompanist-permissions:0.26.3-beta"
+    implementation "androidx.fragment:fragment-ktx:1.6.0-alpha04"
+
+    // Add jpct-ae as .jar from libs directory
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+
+    // Compose
+    def composeBom = platform('androidx.compose:compose-bom:2022.10.00')
+    implementation composeBom
+    androidTestImplementation composeBom
+    implementation "androidx.compose.ui:ui"
+    implementation "androidx.compose.material3:material3"
+    implementation "androidx.compose.ui:ui-tooling-preview"
+    implementation "androidx.compose.runtime:runtime-livedata"
+    implementation 'androidx.activity:activity-compose:1.6.1'
+    implementation "androidx.constraintlayout:constraintlayout-compose:1.1.0-alpha05"
+    implementation "androidx.navigation:navigation-compose:2.5.3"
+
+    debugImplementation "androidx.compose.ui:ui-tooling"
+
+    androidTestImplementation 'androidx.test.ext:junit:1.1.5'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
+    androidTestImplementation "androidx.compose.ui:ui-test-junit4"
+
+    testImplementation "org.junit.jupiter:junit-jupiter-api:5.7.1"
+    testImplementation "org.junit.jupiter:junit-jupiter-engine:5.7.1"
+    testImplementation "org.junit.jupiter:junit-jupiter-params:5.7.1"
+}

@@ -1,0 +1,368 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties":
+    {
+        "enum_ent_sex":
+        {
+            "type": "string",
+            "enum":
+            [
+                "male",
+                "female"
+            ],
+            "description": "The biological sex of the user. (Required)"
+        },
+        "date_ent_dob":
+        {
+            "type": "string",
+            "format": "date",
+            "description": "date of birth of the user, format: YYYY-MM-DD (1990-05-20). Used with date_ent_assessment to calculate the age of the user must be [18-75] years old"
+        },
+        "date_ent_assessment":
+        {
+            "type": "string",
+            "format": "date",
+            "description": "date when the assessment happen, format: YYYY-MM-DD (1990-05-20). Used with date_ent_dob to calculate the age of the user must be [18-75] years old"
+        },
+        "cm_ent_height":
+        {
+            "type": "integer",
+            "minimum": 100,
+            "maximum": 250,
+            "description": "The height of the user in centimeters. (Either the heigth in centimeters or in inches is required)"
+        },
+        "in_ent_height":
+        {
+            "type": "number",
+            "minimum": 39.4,
+            "maximum": 98.4,
+            "description": "The height of the user in inches. (Either the heigth in centimeters or in inches is required)"
+        },
+        "kg_ent_weight":
+        {
+            "type": "number",
+            "minimum": 30.0,
+            "maximum": 250.0,
+            "description": "The weight of the user in kilograms. (Either the weigth in kilograms or in pounds is required)"
+        },
+        "lbs_ent_weight":
+        {
+            "type": "number",
+            "minimum": 66.14,
+            "maximum": 551.15,
+            "description": "The weight of the user in pounds. (Either the weigth in kilograms or in pounds is required)"
+        },
+        "enum_ent_smoker":
+        {
+            "type": "string",
+            "enum":
+            [
+                "current",
+                "former",
+                "never"
+            ],
+            "description": "Current smoking status of the user. (Required)"
+        },
+        "bool_ent_bpMedication":
+        {
+            "type": "boolean",
+            "description": "Whether the user is on blood pressure medication. (Required)"
+        },
+        "bool_ent_familyHistory":
+        {
+            "type": "boolean",
+            "description": "Whether the user has a family history of cardiovascular diseases. (Optional)"
+        },
+        "enum_ent_chronicMedication":
+        {
+            "type": "string",
+            "enum":
+            [
+                "none",
+                "oneOrTwoDiseases",
+                "threeOrMoreDiseases"
+            ],
+            "description": "Chronic medication usage: none, one or two diseases, three or more diseases. (Optional)"
+        },
+        "enum_ent_activityLevel":
+        {
+            "type": "string",
+            "enum":
+            [
+                "inactive",
+                "exercise10Mins",
+                "exercise20to60Mins",
+                "exercise1to3Hours",
+                "exerciseOver3Hours"
+            ],
+            "description": "The level of physical activity. (Optional)"
+        },
+        "mmHg_ent_systolicBP":
+        {
+            "type": "number",
+            "minimum": 40.0,
+            "maximum": 220.0,
+            "description": "Systolic blood pressure in mmHg. (Required IF diastolicBP present otherwise Optional)"
+        },
+        "mmHg_ent_diastolicBP":
+        {
+            "type": "number",
+            "minimum": 20.0,
+            "maximum": 140.0,
+            "description": "Diastolic blood pressure in mmHg. (Required IF SystolicBP present otherwise Optional)"
+        },
+        "arrayMmHg_ent_systolicBP":
+        {
+            "type": "array",
+            "items":
+            {
+                "type": "number",
+                "minimum": 40.0,
+                "maximum": 220.0
+            },
+            "minItems": 3,
+            "maxItems": 3,
+            "description": "List of 3 Systolic blood pressure in mmHg. (Required IF diastolicBP array present otherwise Optional)"
+        },
+        "arrayMmHg_ent_diastolicBP":
+        {
+            "type": "array",
+            "items":
+            {
+                "type": "number",
+                "minimum": 20.0,
+                "maximum": 140.0
+            },
+            "minItems": 3,
+            "maxItems": 3,
+            "description": "List of 3 Diastolic blood pressure in mmHg. (Required IF diastolicBP array present otherwise Optional)"
+        },
+        "bpm_ent_restingHeartRate":
+        {
+            "type": "number",
+            "minimum": 20.0,
+            "maximum": 120.0,
+            "description": "The resting heart rate in beats per minute. (Optional)"
+        },
+        "cm_ent_waistCircumference":
+        {
+            "type": "number",
+            "minimum": 30.0,
+            "maximum": 300.0,
+            "description": "Waist circumference in centimeters. (Optional)"
+        },
+        "cm_ent_hipCircumference":
+        {
+            "type": "number",
+            "minimum": 30.0,
+            "maximum": 300.0,
+            "description": "Hip circumference in centimeters. (Optional)"
+        },
+        "num_ent_bodyFatPercentage":
+        {
+            "type": "number",
+            "minimum": 4.0,
+            "maximum": 90.0,
+            "description": "Body fat percentage. (Optional)"
+        },
+        "bool_ent_stepTestCompleted":
+        {
+            "type": "boolean",
+            "description": "Whether a step test was completed. (Required IF stepTestHeartRate present otherwise Optional)"
+        },
+        "bpm_ent_stepTestHeartRate":
+        {
+            "type": "number",
+            "minimum": 50.0,
+            "maximum": 300.0,
+            "description": "Heart rate in beats per minute recorded after completing a step test. (Required IF stepTestCompleted present otherwise Optional)"
+        },
+        "arrayEnum_ent_anxietySurvey":
+        {
+            "type": "object",
+            "description": "Anxiety survey. If present each question is required.",
+            "properties":
+            {
+                "enum_ent_feelingNervousOrAnxious":
+                {
+                    "$ref": "#/definitions/surveyEnums",
+                    "description": "Over the last 2 weeks, how often have you been bothered by feeling nervous, anxious or on edge?"
+                },
+                "enum_ent_controlWorrying":
+                {
+                    "$ref": "#/definitions/surveyEnums",
+                    "description": "Over the last 2 weeks, how often have you been bothered by not being able to stop or control worrying?"
+                },
+                "enum_ent_excessiveWorrying":
+                {
+                    "$ref": "#/definitions/surveyEnums",
+                    "description": "Over the last 2 weeks, how often have you been bothered by worrying too much about different things?"
+                },
+                "enum_ent_troubleRelaxing":
+                {
+                    "$ref": "#/definitions/surveyEnums",
+                    "description": "Over the last 2 weeks, how often have you been bothered by trouble relaxing?"
+                },
+                "enum_ent_restlessness":
+                {
+                    "$ref": "#/definitions/surveyEnums",
+                    "description": "Over the last 2 weeks, how often have you been bothered by being so restless that it is hard to sit still?"
+                },
+                "enum_ent_easilyAnnoyedOrIrritable":
+                {
+                    "$ref": "#/definitions/surveyEnums",
+                    "description": "Over the last 2 weeks, how often have you been bothered by becoming easily annoyed or irritable?"
+                },
+                "enum_ent_feelingAfraid":
+                {
+                    "$ref": "#/definitions/surveyEnums",
+                    "description": "Over the last 2 weeks, how often have you been bothered by feeling afraid as if something awful might happen?"
+                }
+            },
+            "required":
+            [
+                "enum_ent_feelingNervousOrAnxious",
+                "enum_ent_controlWorrying",
+                "enum_ent_excessiveWorrying",
+                "enum_ent_troubleRelaxing",
+                "enum_ent_restlessness",
+                "enum_ent_easilyAnnoyedOrIrritable",
+                "enum_ent_feelingAfraid"
+            ],
+            "additionalProperties": false
+        },
+        "arrayEnum_ent_depressionSurvey":
+        {
+            "type": "object",
+            "description": "Depression survey. If present each question is required.",
+            "properties":
+            {
+                "enum_ent_lackOfInterest":
+                {
+                    "$ref": "#/definitions/surveyEnums",
+                    "description": "Over the last 2 weeks, how often have you been bothered by little interest or pleasure in doing things?"
+                },
+                "enum_ent_feelingDepress":
+                {
+                    "$ref": "#/definitions/surveyEnums",
+                    "description": "Over the last 2 weeks, how often have you been bothered by feeling down, depressed, or hopeless?"
+                },
+                "enum_ent_sleepProblems":
+                {
+                    "$ref": "#/definitions/surveyEnums",
+                    "description": "Over the last 2 weeks, how often have you been bothered by trouble falling or staying asleep, or sleeping too much?"
+                },
+                "enum_ent_fatigue":
+                {
+                    "$ref": "#/definitions/surveyEnums",
+                    "description": "Over the last 2 weeks, how often have you been bothered by feeling tired or having little energy?"
+                },
+                "enum_ent_eatingIssues":
+                {
+                    "$ref": "#/definitions/surveyEnums",
+                    "description": "Over the last 2 weeks, how often have you been bothered by poor appetite or overeating?"
+                },
+                "enum_ent_lowSelfEsteem":
+                {
+                    "$ref": "#/definitions/surveyEnums",
+                    "description": "Over the last 2 weeks, how often have you been bothered by feeling bad about yourself - or that you are a failure or have let yourself or your family down?"
+                },
+                "enum_ent_concentrationDifficulty":
+                {
+                    "$ref": "#/definitions/surveyEnums",
+                    "description": "Over the last 2 weeks, how often have you been bothered by trouble concentrating on things, such as reading the newspaper or watching television?"
+                },
+                "enum_ent_psychomotorChanges":
+                {
+                    "$ref": "#/definitions/surveyEnums",
+                    "description": "Over the last 2 weeks, how often have you been bothered by moving or speaking so slowly that other people could have noticed? Or the opposite - being so fidgety or restless that you have been moving around a lot more than usual."
+                },
+                "enum_ent_suicidalThoughts":
+                {
+                    "$ref": "#/definitions/surveyEnums",
+                    "description": "Over the last 2 weeks, how often have you been bothered by thoughts that you would be better off dead, or of hurting yourself?"
+                }
+            },
+            "required":
+            [
+                "enum_ent_lackOfInterest",
+                "enum_ent_feelingDepress",
+                "enum_ent_sleepProblems",
+                "enum_ent_fatigue",
+                "enum_ent_eatingIssues",
+                "enum_ent_lowSelfEsteem",
+                "enum_ent_concentrationDifficulty",
+                "enum_ent_psychomotorChanges",
+                "enum_ent_suicidalThoughts"
+            ],
+            "additionalProperties": false
+        }
+    },
+    "additionalProperties": false,
+    "definitions":
+    {
+        "surveyEnums":
+        {
+            "type": "string",
+            "enum":
+            [
+                "notAtAll",
+                "severalDays",
+                "moreThanHalfTheDays",
+                "nearlyEveryDay"
+            ]
+        }
+    },
+    "required":
+    [
+        "enum_ent_sex",
+        "date_ent_dob",
+        "date_ent_assessment",
+        "enum_ent_smoker",
+        "bool_ent_bpMedication"
+    ],
+    "allOf": [
+        {
+            "oneOf": 
+            [
+                { "required": ["cm_ent_height"] },
+                { "required": ["in_ent_height"] }
+            ]
+        },
+        {
+            "oneOf": 
+            [
+                { "required": ["kg_ent_weight"] },
+                { "required": ["lbs_ent_weight"] }
+            ]
+        }
+    ],
+    "dependencies":
+    {
+        "mmHg_ent_systolicBP":
+        [
+            "mmHg_ent_diastolicBP"
+        ],
+        "mmHg_ent_diastolicBP":
+        [
+            "mmHg_ent_systolicBP"
+        ],
+        "arrayMmHg_ent_systolicBP":
+        [
+            "arrayMmHg_ent_diastolicBP"
+        ],
+        "arrayMmHg_ent_diastolicBP":
+        [
+            "arrayMmHg_ent_systolicBP"
+        ],
+        "stepTestHeartRate":
+        [
+            "isStepTestCompleted"
+        ],
+        "isStepTestCompleted":
+        [
+            "stepTestHeartRate"
+        ]
+    }
+}

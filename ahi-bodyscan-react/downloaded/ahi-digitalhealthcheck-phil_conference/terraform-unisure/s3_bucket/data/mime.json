@@ -1,0 +1,14 @@
+{
+    ".html": "text/html",
+    ".css": "text/css",
+    ".md": "text/markdown",
+    ".avif": "image/avif",
+    ".png": "image/png",
+    ".jpg": "image/jpeg",
+    ".riv": "application/octet-stream",
+    ".js": "text/javascript",
+    ".svg": "image/svg+xml",
+    ".data": "application/octet-stream",
+    ".map": "application/octet-stream",
+    ".wasm": "application/wasm"
+}

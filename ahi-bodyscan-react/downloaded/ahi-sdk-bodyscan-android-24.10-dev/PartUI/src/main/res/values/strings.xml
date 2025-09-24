@@ -1,0 +1,29 @@
+<resources>
+    <string name="phone_height_tips_heading">Phone Height Tips</string>
+    <string name="phone_height_tips_message_1">A surface the same height as\nyour hips.</string>
+    <string name="phone_height_tips_message_2"> If you are on the taller or\nshorter side, try to use some\nbooks or a lower surface.</string>
+    <string name="alignment_info_heading">Alignment Help</string>
+    <string name="alignment_info_1">Lean the phone against a solid object and then using your thumbs push the base gently until the circles are over one another.</string>
+    <string name="alignment_info_2">If you have a phone with a flat edge, you might be able to balance it upright without needing a solid object.</string>
+    <string name="fit_in_frame">Fit Your\nWhole Body\nin the Frame</string>
+    <string name="move_back">Move\nBack</string>
+    <string name="move_forward">Move\nForward</string>
+    <string name="perfect_spot">Perfect\nSpot</string>
+    <string name="hold_still">Hold Still</string>
+    <string name="fit_into_outline">Fit into\nOutline</string>
+    <string name="one_person">One\nPerson\nOnly</string>
+    <string name="turn_left">Turn left\nand look\nat camera</string>
+    <string name="feet_together">Feet\nTogether</string>
+    <string name="arms_by_side">Arms\nby Sides</string>
+    <string name="phone_higher_message">Place Phone\non Higher\nSurface at\nHip Height</string>
+    <string name="phone_lower_message">Place Phone\non Lower\nSurface at\nHip Height</string>
+    <string name="head_ankle_invisible_message">We Can\'t\nSee You</string>
+    <string name="ankle_invisible_message">Can\'t See\nYour\nAnkles</string>
+    <string name="phone_height_retry_message">Adjust Height and  Try Again</string>
+    <string name="phone_placement_retry_message">Adjust Phone and  Try Again</string>
+    <string name="try_again">Try Again</string>
+    <string name="phone_height_tips">Phone Height Tips…</string>
+    <string name="phone_placement_tips">Phone Placement Tips…</string>
+    <string name="head_ankle_invisible_tips">Why can\'t you see me?</string>
+    <string name="alignment_heading">Align Circles Over\nOne Another.</string>
+</resources>

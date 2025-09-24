@@ -1,0 +1,10 @@
+#!/bin/bash
+echo "This script needs to be run with sudo to apply the nginx configuration"
+echo "Please run: sudo bash apply-nginx-config.sh"
+echo ""
+echo "It will:"
+echo "1. Backup current nginx config"
+echo "2. Apply new domain-based config"
+echo "3. Reload nginx"
+echo ""
+echo "The new config adds support for ahi.datapulseai.co domain"

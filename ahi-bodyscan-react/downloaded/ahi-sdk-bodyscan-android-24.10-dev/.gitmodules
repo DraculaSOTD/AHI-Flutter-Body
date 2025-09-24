@@ -1,0 +1,6 @@
+[submodule "ahi-sdk-build-tools-android"]
+	path = ahi-sdk-build-tools-android
+	url = https://github.com/ahi-dev/ahi-sdk-build-tools-android.git
+[submodule "cereal"]
+	path = Common/src/main/cpp/libs/cereal
+	url = https://github.com/USCiLab/cereal.git

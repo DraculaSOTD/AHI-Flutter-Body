@@ -1,0 +1,649 @@
+---
+format_version: '11'
+default_step_lib_source: 'https://github.com/bitrise-io/bitrise-steplib.git'
+project_type: android
+trigger_map:
+  - push_branch: '*/release'
+    workflow: release
+  - push_branch: '*/dev'
+    workflow: dev
+  - pull_request_source_branch: '*'
+    pull_request_target_branch: '*/dev'
+    workflow: build
+  - pull_request_source_branch: '*/dev'
+    pull_request_target_branch: '*/release'
+    workflow: dev
+workflows:
+  dev:
+    description: >
+      Builds the app and creates dev build outputs.
+    steps:
+      - activate-ssh-key@4:
+          run_if: '{{getenv "SSH_RSA_PRIVATE_KEY" | ne ""}}'
+      - script@1: &gitAuth
+          title: Git Authentication
+          inputs:
+            - content: |-
+                # Add credentials for using git in script steps
+                git config --global url."https://${GH_GIT_USER}:${GH_GIT_PASS}@github.com".insteadOf "https://github.com"
+      - git-clone@6: {}
+      - script@1: &shPrep
+          title: Prep
+          inputs:
+            - content: |-
+                # Create output directories
+                mkdir -p "${HOME}/ahi"
+                
+                # Generate new patch version associated to the build
+                echo ${BITRISE_GIT_BRANCH}
+                echo ${STAGE}
+                echo ${BITRISE_GIT_BRANCH} | sed -E "s/\/.+/\.${BITRISE_BUILD_NUMBER}/" > "${HOME}/ahi/VERSION.txt"
+                echo ${BITRISE_GIT_BRANCH} | sed -E "s/\/.+//" > "${HOME}/ahi/VERSION.MAJOR.txt"
+                cat "${HOME}/ahi/VERSION.txt"
+                cp -f "${HOME}/ahi/VERSION.txt" ./VERSION.txt
+                perl -p -i -e 's/\R//g;' "${HOME}/ahi/VERSION.txt"
+                perl -p -i -e 's/\R//g;' "${HOME}/ahi/VERSION.MAJOR.txt"
+                envman add --key AHI_VER --valuefile "${HOME}/ahi/VERSION.txt"
+                envman add --key AHI_VER_MAJOR --valuefile "${HOME}/ahi/VERSION.MAJOR.txt"
+                
+                # Get License
+                curl "https://ref.advancedhumanimaging.io/LICENSE.md" > ./LICENSE.md
+                cp LICENSE.md "${HOME}/ahi/"
+                
+                # Update README with latest version tags
+                M_REF=$([ "$STAGE" == "prod" ] && echo "ref" || echo "refdev")
+                M_MAJOR=$(< "${HOME}/ahi/VERSION.MAJOR.txt")
+                sed -i -e 's/branch\/.*\/graph/branch\/'${M_MAJOR}'\/'${STAGE}'\/graph/g;' ./README.md
+                sed -i -e 's/'${MODULE_NAME}'\/.*\/latest\/badge/'${MODULE_NAME}'\/'${M_MAJOR}'\/latest\/badge/;' ./README.md
+                sed -i -e 's/)](https:\/\/ref\.advancedhumanimaging\.io\/android\/'${MODULE_NAME}'\/.*\/latest/)](https:\/\/ref\.advancedhumanimaging\.io\/android\/'${MODULE_NAME}'\/'${M_MAJOR}'\/latest/;' ./README.md
+                sed -i -e 's/)](https:\/\/refdev\.advancedhumanimaging\.io\/android\/'${MODULE_NAME}'\/.*\/latest/)](https:\/\/refdev\.advancedhumanimaging\.io\/android\/'${MODULE_NAME}'\/'${M_MAJOR}'\/latest/;' ./README.md
+                sed -i -e 's/ref\./'${M_REF}'\./g;' ./README.md
+                sed -i -e 's/refdev\./'${M_REF}'\./g;' ./README.md
+                
+                # Setup up environment variables for access to the appropriate maven repos depending on stage
+                envman add --key AHI_RELEASE_AWS_ACCESS_KEY --value $PROD_MAVEN_REPO_ACCESS_KEY
+                envman add --key AHI_RELEASE_AWS_SECRET_KEY --value $PROD_MAVEN_REPO_SECRET
+                if [ "$STAGE" == "dev" ]
+                then
+                  envman add --key AHI_DEV_AWS_ACCESS_KEY --value $DEV_MAVEN_REPO_ACCESS_KEY
+                  envman add --key AHI_DEV_AWS_SECRET_KEY --value $DEV_MAVEN_REPO_SECRET
+                fi
+                
+                # Clear AHI dependencies from the gradle cache to force fetching the latest
+                # sh scripts/clearCachedAHIDeps.sh
+      - install-missing-android-tools@3:
+          inputs:
+            - gradlew_path: $PROJECT_LOCATION/gradlew
+            - ndk_version: 23.1.7779620
+
+      - change-android-versioncode-and-versionname@1: &commonVersionCode
+          inputs:
+            - new_version_name: $AHI_VER
+            - build_gradle_path: $PROJECT_LOCATION/Common/CommonExample/build.gradle
+      - android-lint@0: &commonLint
+          inputs:
+            - project_location: $PROJECT_LOCATION
+            - module: Common
+            - variant: $VARIANT
+      - android-unit-test@1: &commonUnitTest
+          inputs:
+            - project_location: $PROJECT_LOCATION
+            - module: Common
+            - variant: $VARIANT
+      - android-build@1: &commonBuild
+          inputs:
+            - project_location: $PROJECT_LOCATION
+            - module: Common:CommonExample
+            - build_type: aab
+            - variant: $VARIANT
+      - bitrise-step-export-universal-apk@0: {}
+
+      - change-android-versioncode-and-versionname@1: &partAlignmentVersionCode
+          inputs:
+            - new_version_name: $AHI_VER
+            - build_gradle_path: $PROJECT_LOCATION/PartAlignment/PartAlignmentExample/build.gradle
+      - android-lint@0: &partAlignmentLint
+          inputs:
+            - project_location: $PROJECT_LOCATION
+            - module: PartAlignment
+            - variant: $VARIANT
+      - android-unit-test@1: &partAlignmentUnitTest
+          inputs:
+            - project_location: $PROJECT_LOCATION
+            - module: PartAlignment
+            - variant: $VARIANT
+      - android-build@1: &partAlignmentBuild
+          inputs:
+            - project_location: $PROJECT_LOCATION
+            - module: PartAlignment:PartAlignmentExample
+            - build_type: apk
+            - variant: $VARIANT
+      - bitrise-step-export-universal-apk@0: {}
+
+      - change-android-versioncode-and-versionname@1: &cameraVersionCode
+          inputs:
+            - new_version_name: $AHI_VER
+            - build_gradle_path: $PROJECT_LOCATION/PartCamera/PartCameraExample/build.gradle
+      - android-lint@0: &cameraLint
+          inputs:
+            - project_location: $PROJECT_LOCATION
+            - module: PartCamera
+            - variant: $VARIANT
+      - android-unit-test@1: &cameraUnitTest
+          inputs:
+            - project_location: $PROJECT_LOCATION
+            - module: PartCamera
+            - variant: $VARIANT
+      - android-build@1: &cameraBuild
+          inputs:
+            - project_location: $PROJECT_LOCATION
+            - module: PartCamera:PartCameraExample
+            - build_type: aab
+            - variant: $VARIANT
+      - bitrise-step-export-universal-apk@0: {}
+
+      - change-android-versioncode-and-versionname@1: &classificationVersionCode
+          inputs:
+            - new_version_name: $AHI_VER
+            - build_gradle_path: $PROJECT_LOCATION/PartClassification/PartClassificationExample/build.gradle
+      - android-lint@0: &classificationLint
+          inputs:
+            - project_location: $PROJECT_LOCATION
+            - module: PartClassification
+            - variant: $VARIANT
+      - android-unit-test@1: &classificationUnitTest
+          inputs:
+            - project_location: $PROJECT_LOCATION
+            - module: PartClassification
+            - variant: $VARIANT
+      - android-build@1: &classificationBuild
+          inputs:
+            - project_location: $PROJECT_LOCATION
+            - module: PartClassification:PartClassificationExample
+            - build_type: aab
+            - variant: $VARIANT
+      - bitrise-step-export-universal-apk@0: {}
+
+      - change-android-versioncode-and-versionname@1: &contourVersionCode
+          inputs:
+            - new_version_name: $AHI_VER
+            - build_gradle_path: $PROJECT_LOCATION/PartContour/PartContourExample/build.gradle
+      - android-lint@0: &contourLint
+          inputs:
+            - project_location: $PROJECT_LOCATION
+            - module: PartContour
+            - variant: $VARIANT
+      - android-unit-test@1: &contourUnitTest
+          inputs:
+            - project_location: $PROJECT_LOCATION
+            - module: PartContour
+            - variant: $VARIANT
+      - android-build@1: &contourBuild
+          inputs:
+            - project_location: $PROJECT_LOCATION
+            - module: PartContour:PartContourExample
+            - build_type: aab
+            - variant: $VARIANT
+      - bitrise-step-export-universal-apk@0: {}
+
+      - change-android-versioncode-and-versionname@1: &inversionVersionCode
+          inputs:
+            - new_version_name: $AHI_VER
+            - build_gradle_path: $PROJECT_LOCATION/PartInversion/PartInversionExample/build.gradle
+      - android-lint@0: &inversionLint
+          inputs:
+            - project_location: $PROJECT_LOCATION
+            - module: PartInversion
+            - variant: $VARIANT
+      - android-unit-test@1: &inversionUnitTest
+          inputs:
+            - project_location: $PROJECT_LOCATION
+            - module: PartInversion
+            - variant: $VARIANT
+      - android-build@1: &inversionBuild
+          inputs:
+            - project_location: $PROJECT_LOCATION
+            - module: PartInversion:PartInversionExample
+            - build_type: aab
+            - variant: $VARIANT
+      - bitrise-step-export-universal-apk@0: {}
+
+      - change-android-versioncode-and-versionname@1: &poseDetectVersionCode
+          inputs:
+            - new_version_name: $AHI_VER
+            - build_gradle_path: $PROJECT_LOCATION/PartPoseDetection/PartPoseDetectionExample/build.gradle
+      - android-lint@0: &poseDetectLint
+          inputs:
+            - project_location: $PROJECT_LOCATION
+            - module: PartPoseDetection
+            - variant: $VARIANT
+      - android-unit-test@1: &poseDetectUnitTest
+          inputs:
+            - project_location: $PROJECT_LOCATION
+            - module: PartPoseDetection
+            - variant: $VARIANT
+      - android-build@1: &poseDetectBuild
+          inputs:
+            - project_location: $PROJECT_LOCATION
+            - module: PartPoseDetection:PartPoseDetectionExample
+            - build_type: aab
+            - variant: $VARIANT
+      - bitrise-step-export-universal-apk@0: {}
+
+      - change-android-versioncode-and-versionname@1: &poseInspectVersionCode
+          inputs:
+            - new_version_name: $AHI_VER
+            - build_gradle_path: $PROJECT_LOCATION/PartPoseInspection/PartPoseInspectionExample/build.gradle
+      - android-lint@0: &poseInspectLint
+          inputs:
+            - project_location: $PROJECT_LOCATION
+            - module: PartPoseInspection
+            - variant: $VARIANT
+      - android-unit-test@1: &poseInspectUnitTest
+          inputs:
+            - project_location: $PROJECT_LOCATION
+            - module: PartPoseInspection
+            - variant: $VARIANT
+      - android-build@1: &poseInspectBuild
+          inputs:
+            - project_location: $PROJECT_LOCATION
+            - module: PartPoseInspection:PartPoseInspectionExample
+            - build_type: aab
+            - variant: $VARIANT
+      - bitrise-step-export-universal-apk@0: {}
+
+      - change-android-versioncode-and-versionname@1: &resourcesVersionCode
+          inputs:
+            - new_version_name: $AHI_VER
+            - build_gradle_path: $PROJECT_LOCATION/PartResources/PartResourcesExample/build.gradle
+      - android-lint@0: &resourcesLint
+          inputs:
+            - project_location: $PROJECT_LOCATION
+            - module: PartResources
+            - variant: $VARIANT
+      - android-unit-test@1: &resourcesUnitTest
+          inputs:
+            - project_location: $PROJECT_LOCATION
+            - module: PartResources
+            - variant: $VARIANT
+      - android-build@1: &resourcesBuild
+          inputs:
+            - project_location: $PROJECT_LOCATION
+            - module: PartResources:PartResourcesExample
+            - build_type: aab
+            - variant: $VARIANT
+      - bitrise-step-export-universal-apk@0: {}
+
+      - change-android-versioncode-and-versionname@1: &segmentVersionCode
+          inputs:
+            - new_version_name: $AHI_VER
+            - build_gradle_path: $PROJECT_LOCATION/PartSegmentation/PartSegmentationExample/build.gradle
+      - android-unit-test@1: &segmentUnitTest
+          inputs:
+            - project_location: $PROJECT_LOCATION
+            - module: PartSegmentation
+            - variant: $VARIANT
+      - android-build@1: &segmentBuild
+          inputs:
+            - project_location: $PROJECT_LOCATION
+            - module: PartSegmentation:PartSegmentationExample
+            - build_type: aab
+            - variant: $VARIANT
+      - bitrise-step-export-universal-apk@0: {}
+
+      - change-android-versioncode-and-versionname@1: &uiVersionCode
+          inputs:
+            - new_version_name: $AHI_VER
+            - build_gradle_path: $PROJECT_LOCATION/PartUI/PartUIExample/build.gradle
+      - android-lint@0: &uiLint
+          inputs:
+            - project_location: $PROJECT_LOCATION
+            - module: PartUI
+            - variant: $VARIANT
+      - android-unit-test@1: &uiUnitTest
+          inputs:
+            - project_location: $PROJECT_LOCATION
+            - module: PartUI
+            - variant: $VARIANT
+      - android-build@1: &uiBuild
+          inputs:
+            - project_location: $PROJECT_LOCATION
+            - module: PartUI:PartUIExample
+            - build_type: aab
+            - variant: $VARIANT
+      - bitrise-step-export-universal-apk@0: {}
+
+      - change-android-versioncode-and-versionname@1: &bodyscanVersionCode
+          inputs:
+            - new_version_name: $AHI_VER
+            - build_gradle_path: $PROJECT_LOCATION/$SDK_MODULE/build.gradle
+      - change-android-versioncode-and-versionname@1: &bodyscanExampleVersionCode
+          inputs:
+            - new_version_name: $AHI_VER
+            - build_gradle_path: $PROJECT_LOCATION/$SDK_MODULE/AHIBodyScanExample/build.gradle
+      - android-lint@0: &bodyscanLint
+          inputs:
+            - project_location: $PROJECT_LOCATION
+            - module: $SDK_MODULE
+            - variant: $VARIANT
+      - android-unit-test@1: &bodyscanUnitTest
+          inputs:
+            - project_location: $PROJECT_LOCATION
+            - module: $SDK_MODULE
+            - variant: $VARIANT
+      - android-build@1: &bodyscanBuild
+          inputs:
+            - project_location: $PROJECT_LOCATION
+            - module: $SDK_MODULE:AHIBodyScanExample
+            - build_type: aab
+            - variant: $VARIANT
+      - bitrise-step-export-universal-apk@0: {}
+
+      - deploy-to-bitrise-io@2:
+          inputs:
+            - notify_user_groups: none
+            - is_enable_public_page: 'false'
+      - script@1:
+          title: PublishDev
+          inputs:
+            - content: |-
+                ./gradlew publishAllPublicationsToDevRepository -DVERSION_NUMBER=$AHI_VER
+      - script@1: &shPublishDocs
+          title: Publish SDK Docs
+          inputs:
+            - content: |-
+                # Generate docs
+                ./gradlew dokkaHtml; gradlew_return_code=$?
+                if (( gradlew_return_code != 0 )); then
+                  (exit 1);
+                fi
+                
+                # ZIP docs for bitrise build output
+                zip -r "${HOME}/ahi/${MODULE_NAME}.docs.${AHI_VER}.zip" $DOCS_OUTPUT
+                cp "${HOME}/ahi/${MODULE_NAME}.docs.${AHI_VER}.zip" "${BITRISE_DEPLOY_DIR}/"
+                
+                # Publish docs
+                M_DOC_URL=$([ "$STAGE" == "prod" ] && echo "https://ref.advancedhumanimaging.io" || echo "https://refdev.advancedhumanimaging.io")
+                echo -e '<!DOCTYPE html><html><head><meta http-equiv="refresh" content="0; url='${M_DOC_URL}/android/${MODULE_NAME}/${AHI_VER_MAJOR}/${AHI_VER}/index.html'"/></head></html>' > index.html
+                M_DOC_S3=$([ "$STAGE" == "prod" ] && echo "ahi-prod-sdk-docs" || echo "ahi-dev-sdk-docs")
+                aws s3 sync $DOCS_OUTPUT/ "s3://${M_DOC_S3}/android/${MODULE_NAME}/${AHI_VER_MAJOR}/${AHI_VER}/"
+                aws s3 cp index.html "s3://${M_DOC_S3}/android/${MODULE_NAME}/${AHI_VER_MAJOR}/latest/index.html"
+                M_DOC_CDN_DIST=$([ "$STAGE" == "prod" ] && echo "$AWS_DOC_PROD_DIST" || echo "$AWS_DOC_DEV_DIST")
+                aws cloudfront create-invalidation --distribution-id "${M_DOC_CDN_DIST}" --paths "/android/${MODULE_NAME}/${AHI_VER_MAJOR}/latest/*"
+                
+                # Module listing
+                rm index.html
+                M_SDK_FW=$(echo "<p><strong><a href=\"FW\/index.html\">FW<\/a><\/strong><\/p>" | sed -E "s/FW/${MODULE_NAME}/g")
+                curl "${M_DOC_URL}/android/index.html" > index.html
+                if ! grep -q "${M_SDK_FW}" index.html; then
+                sed -i -e 's/<h3>Android<\/h3>/<h3>Android<\/h3>'"${M_SDK_FW}"'/' index.html
+                aws s3 cp index.html "s3://${M_DOC_S3}/android/index.html"
+                aws cloudfront create-invalidation --distribution-id "${M_DOC_CDN_DIST}" --paths "/android/index.html"
+                fi
+                
+                # Update listing
+                rm index.html
+                M_DIR_FW=$(echo "<h3>Android - FW<\/h3>" | sed -E "s/FW/${MODULE_NAME}/g")
+                M_DIR_TAG=$(echo "<p><strong><a href=\"VER\/latest\/index.html\">vVER (latest)<\/a><\/strong><\/p>" | sed -E "s/VER/${AHI_VER_MAJOR}/g")
+                curl "${M_DOC_URL}/android/${MODULE_NAME}/index.html" > index.html
+                # Check if need to seed index
+                if grep -q "AccessDenied" index.html; then
+                echo -e '<!DOCTYPE html><html lang="en"><head><title>AHI-SDK-DOC-DEV</title></head><body><h1>Advanced Human Imaging</h1><h2>SDK - Reference Documentation - Dev</h2></body></html>' > index.html
+                fi
+                
+                # Framework listing
+                if ! grep -q "${M_DIR_FW}" index.html; then
+                sed -i -e 's/<\/h2>/<\/h2>'"${M_DIR_FW}"'/' index.html
+                fi
+                
+                # Version major listing
+                if ! grep -q "${M_DIR_TAG}" index.html; then
+                sed -i -e 's/'${MODULE_NAME}'<\/h3>/'${MODULE_NAME}'<\/h3>'"${M_DIR_TAG}"'/' index.html
+                aws s3 cp index.html "s3://${M_DOC_S3}/android/${MODULE_NAME}/index.html"
+                aws cloudfront create-invalidation --distribution-id "${M_DOC_CDN_DIST}" --paths "/android/${MODULE_NAME}/index.html"
+                fi
+      - script@1: &shGenerateCodecov
+          title: GenerateCodeCovReport
+          deps:
+            apt_get:
+              - name: cmake
+              - name: lcov
+          inputs:
+            - content: |-
+                . scripts/runLocalCppTests.sh
+                cd $PROJECT_LOCATION
+                ./gradlew :$SDK_MODULE:testDebugUnitTestCoverage
+      - codecov@3: &codeCov
+          inputs:
+            - CODECOV_TOKEN: $CODECOV_TOKEN
+            - OS: linux
+            - OPTIONS: >-
+                -f $PROJECT_LOCATION/$SDK_MODULE/build/coverage-report/coverage.xml
+                -f $PROJECT_LOCATION/$SDK_MODULE/src/test/cppLocalTests/build/coverage.info
+      - create-install-page-qr-code@1: &qrCode
+          inputs:
+            - public_install_page_url: $BITRISE_BUILD_URL
+      - send-microsoft-teams-message@0: &notificationTeams
+          inputs:
+            - webhook_url: "$TEAMS_HOOK"
+            - buttons: |-
+                View App|${BITRISE_APP_URL}
+                View Build|${BITRISE_BUILD_URL}
+            - fields: |-
+                App|${BITRISE_APP_TITLE}
+                Branch|${BITRISE_GIT_BRANCH}
+                Version|${AHI_VER}
+                Build Number|${BITRISE_BUILD_NUMBER}
+                QR Code|${BITRISE_PUBLIC_INSTALL_PAGE_QR_CODE_IMAGE_URL}
+            - images: |-
+                Install|"${BITRISE_PUBLIC_INSTALL_PAGE_QR_CODE_IMAGE_URL}"
+    envs:
+      - opts:
+          is_expand: false
+        STAGE: dev
+  release:
+    description: >
+      Builds the app and creates release build outputs.
+    steps:
+      - activate-ssh-key@4:
+          run_if: '{{getenv "SSH_RSA_PRIVATE_KEY" | ne ""}}'
+      - script@1: *gitAuth
+      - git-clone@6: {}
+      - script@1: *shPrep
+      - install-missing-android-tools@3:
+          inputs:
+            - gradlew_path: $PROJECT_LOCATION/gradlew
+            - ndk_version: 23.1.7779620
+
+      - change-android-versioncode-and-versionname@1: *commonVersionCode
+      - android-lint@0: *commonLint
+      - android-unit-test@1: *commonUnitTest
+      - android-build@1: *commonBuild
+      - bitrise-step-export-universal-apk@0: {}
+
+      - change-android-versioncode-and-versionname@1: *partAlignmentVersionCode
+      - android-lint@0: *partAlignmentLint
+      - android-unit-test@1: *partAlignmentUnitTest
+      - android-build@1: *partAlignmentBuild
+      - bitrise-step-export-universal-apk@0: {}
+
+      - change-android-versioncode-and-versionname@1: *cameraVersionCode
+      - android-lint@0: *cameraLint
+      - android-unit-test@1: *cameraUnitTest
+      - android-build@1: *cameraBuild
+      - bitrise-step-export-universal-apk@0: {}
+
+      - change-android-versioncode-and-versionname@1: *classificationVersionCode
+      - android-lint@0: *classificationLint
+      - android-unit-test@1: *classificationUnitTest
+      - android-build@1: *classificationBuild
+      - bitrise-step-export-universal-apk@0: {}
+
+      - change-android-versioncode-and-versionname@1: *contourVersionCode
+      - android-lint@0: *contourLint
+      - android-unit-test@1: *contourUnitTest
+      - android-build@1: *contourBuild
+      - bitrise-step-export-universal-apk@0: {}
+
+      - change-android-versioncode-and-versionname@1: *inversionVersionCode
+      - android-lint@0: *inversionLint
+      - android-unit-test@1: *inversionUnitTest
+      - android-build@1: *inversionBuild
+      - bitrise-step-export-universal-apk@0: {}
+
+      - change-android-versioncode-and-versionname@1: *poseDetectVersionCode
+      - android-lint@0: *poseDetectLint
+      - android-unit-test@1: *poseDetectUnitTest
+      - android-build@1: *poseDetectBuild
+      - bitrise-step-export-universal-apk@0: {}
+
+      - change-android-versioncode-and-versionname@1: *poseInspectVersionCode
+      - android-lint@0: *poseInspectLint
+      - android-unit-test@1: *poseInspectUnitTest
+      - android-build@1: *poseInspectBuild
+      - bitrise-step-export-universal-apk@0: {}
+
+      - change-android-versioncode-and-versionname@1: *resourcesVersionCode
+      - android-lint@0: *resourcesLint
+      - android-unit-test@1: *resourcesUnitTest
+      - android-build@1: *resourcesBuild
+      - bitrise-step-export-universal-apk@0: {}
+
+      - change-android-versioncode-and-versionname@1: *segmentVersionCode
+      - android-unit-test@1: *segmentUnitTest
+      - android-build@1: *segmentBuild
+      - bitrise-step-export-universal-apk@0: {}
+
+      - change-android-versioncode-and-versionname@1: *uiVersionCode
+      - android-lint@0: *uiLint
+      - android-unit-test@1: *uiUnitTest
+      - android-build@1: *uiBuild
+      - bitrise-step-export-universal-apk@0: {}
+
+      - change-android-versioncode-and-versionname@1: *bodyscanVersionCode
+      - change-android-versioncode-and-versionname@1: *bodyscanExampleVersionCode
+      - android-lint@0: *bodyscanLint
+      - android-unit-test@1: *bodyscanUnitTest
+      - android-build@1: *bodyscanBuild
+      - bitrise-step-export-universal-apk@0: {}
+
+      - deploy-to-bitrise-io@2:
+          inputs:
+            - notify_user_groups: none
+            - is_enable_public_page: 'false'
+      - script@1:
+          title: PublishRelease
+          inputs:
+            - content: |-
+                ./gradlew publishReleasePublicationToReleaseRepository -DVERSION_NUMBER=$AHI_VER
+      - script@1: *shPublishDocs
+      - script@1: *shGenerateCodecov
+      - codecov@3: *codeCov
+      - cache-push@2: {}
+      - create-install-page-qr-code@1: *qrCode
+      - send-microsoft-teams-message@0: *notificationTeams
+    envs:
+      - opts:
+          is_expand: false
+        STAGE: prod
+  build:
+    description: >
+      Step which is run every time a branch is pushed. Will build the app but
+      will not create any outputs.
+    steps:
+      - activate-ssh-key@4:
+          run_if: '{{getenv "SSH_RSA_PRIVATE_KEY" | ne ""}}'
+      - script@1: *gitAuth
+      - git-clone@6: {}
+      - script@1: *shPrep
+      - install-missing-android-tools@3:
+          inputs:
+            - gradlew_path: $PROJECT_LOCATION/gradlew
+            - ndk_version: 23.1.7779620
+
+      - change-android-versioncode-and-versionname@1: *commonVersionCode
+      - android-lint@0: *commonLint
+      - android-unit-test@1: *commonUnitTest
+      - android-build@1: *commonBuild
+
+      - change-android-versioncode-and-versionname@1: *partAlignmentVersionCode
+      - android-lint@0: *partAlignmentLint
+      - android-unit-test@1: *partAlignmentUnitTest
+      - android-build@1: *partAlignmentBuild
+
+      - change-android-versioncode-and-versionname@1: *cameraVersionCode
+      - android-lint@0: *cameraLint
+      - android-unit-test@1: *cameraUnitTest
+      - android-build@1: *cameraBuild
+
+      - change-android-versioncode-and-versionname@1: *classificationVersionCode
+      - android-lint@0: *classificationLint
+      - android-unit-test@1: *classificationUnitTest
+      - android-build@1: *classificationBuild
+
+      - change-android-versioncode-and-versionname@1: *contourVersionCode
+      - android-lint@0: *contourLint
+      - android-unit-test@1: *contourUnitTest
+      - android-build@1: *contourBuild
+
+      - change-android-versioncode-and-versionname@1: *inversionVersionCode
+      - android-lint@0: *inversionLint
+      - android-unit-test@1: *inversionUnitTest
+      - android-build@1: *inversionBuild
+
+      - change-android-versioncode-and-versionname@1: *poseDetectVersionCode
+      - android-lint@0: *poseDetectLint
+      - android-unit-test@1: *poseDetectUnitTest
+      - android-build@1: *poseDetectBuild
+
+      - change-android-versioncode-and-versionname@1: *poseInspectVersionCode
+      - android-lint@0: *poseInspectLint
+      - android-unit-test@1: *poseInspectUnitTest
+      - android-build@1: *poseInspectBuild
+
+      - change-android-versioncode-and-versionname@1: *resourcesVersionCode
+      - android-lint@0: *resourcesLint
+      - android-unit-test@1: *resourcesUnitTest
+      - android-build@1: *resourcesBuild
+
+      - change-android-versioncode-and-versionname@1: *segmentVersionCode
+      - android-unit-test@1: *segmentUnitTest
+      - android-build@1: *segmentBuild
+
+      - change-android-versioncode-and-versionname@1: *uiVersionCode
+      - android-lint@0: *uiLint
+      - android-unit-test@1: *uiUnitTest
+      - android-build@1: *uiBuild
+
+      - change-android-versioncode-and-versionname@1: *bodyscanVersionCode
+      - change-android-versioncode-and-versionname@1: *bodyscanExampleVersionCode
+      - android-lint@0: *bodyscanLint
+      - android-unit-test@1: *bodyscanUnitTest
+      - android-build@1: *bodyscanBuild
+
+      - script@1: *shGenerateCodecov
+      - codecov@3: *codeCov
+    envs:
+      - opts:
+          is_expand: false
+        STAGE: dev
+app:
+  envs:
+    - opts:
+        is_expand: false
+      PROJECT_LOCATION: .
+    - opts:
+        is_expand: false
+      SDK_MODULE: AHIBodyScan
+    - opts:
+        is_expand: false
+      VARIANT: release
+    - opts:
+        is_expand: false
+      MODULE_NAME: AHIBodyScan
+    - opts:
+        is_expand: false
+      DOCS_OUTPUT: ./AHIBodyScan/build/dokka/html
+    - opts:
+        is_expand: false
+      TEAMS_HOOK: 'https://advancedhumanimaging.webhook.office.com/webhookb2/a6ab39a1-2336-422f-a01a-fde88e7910ec@0a0ba87d-f284-4664-b53e-a0a236095ad4/IncomingWebhook/14dd17c7f2084e5eb8d93305724e52bb/7722fdaf-58fa-42fe-8826-52ff04b07780'

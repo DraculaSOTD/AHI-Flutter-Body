@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="Theme.BodyScan.PartUI" parent="Theme.Material3.Dark.NoActionBar" />
+
+    <style name="AHIBSBottomSheetDialogTheme" parent="Theme.Design.Light.BottomSheetDialog">
+        <item name="bottomSheetStyle">@style/AHIBSBottomSheetStyle</item>
+    </style>
+
+    <style name="AHIBSBottomSheetStyle" parent="Widget.Design.BottomSheet.Modal">
+        <item name="android:background">@android:color/transparent</item>
+    </style>
+
+</resources>

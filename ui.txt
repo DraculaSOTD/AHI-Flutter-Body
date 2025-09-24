@@ -1,0 +1,739 @@
+```json
+{
+  "designSystemProfile": [
+    {
+      "screenName": "Initializing",
+      "fileName": "initializing.png",
+      "description": "A full-screen loading state displayed when the application is first starting up. It features a minimalist, dark theme to indicate background activity.",
+      "style": {
+        "backgroundColor": "#111111",
+        "primaryColor": "#00B2FF",
+        "textColor": {
+          "primary": "#FFFFFF"
+        },
+        "font": {
+          "family": "Sans-Serif",
+          "headings": {
+            "size": "24px",
+            "weight": "600"
+          }
+        }
+      },
+      "structure": {
+        "layout": "Full-screen, single-column, vertically and horizontally centered content.",
+        "header": { "present": false },
+        "body": {
+          "components": ["LoadingIndicator"]
+        },
+        "footer": { "present": false }
+      },
+      "components": [
+        {
+          "name": "LoadingIndicator",
+          "style": {
+            "textColor": "#FFFFFF",
+            "indicatorColor": "#00B2FF"
+          },
+          "description": "A text label ('Initializing') with a thin, animated progress line underneath."
+        }
+      ]
+    },
+    {
+      "screenName": "Login Modal",
+      "fileName": "login.png",
+      "description": "A modal view for user authentication. It overlays the main application screen with a clean, light-themed form.",
+      "style": {
+        "backgroundColor": "#FFFFFF",
+        "primaryColor": "#6A00FF",
+        "textColor": {
+          "primary": "#333333",
+          "placeholder": "#BDBDBD"
+        },
+        "font": {
+          "family": "Sans-Serif",
+          "headings": {
+            "size": "22px",
+            "weight": "600"
+          },
+          "body": {
+            "size": "14px",
+            "weight": "400"
+          }
+        },
+        "cornerRadius": "16px"
+      },
+      "structure": {
+        "layout": "Modal dialog with a fixed header and body content.",
+        "header": {
+          "present": true,
+          "elements": ["Title", "Close Button (X)"]
+        },
+        "body": {
+          "components": ["TextInputField", "PrimaryButton"]
+        },
+        "footer": { "present": false }
+      },
+      "components": [
+        {
+          "name": "TextInputField",
+          "style": {
+            "backgroundColor": "#FFFFFF",
+            "borderColor": "#E0E0E0",
+            "cornerRadius": "8px",
+            "height": "50px"
+          },
+          "description": "A text input field with a placeholder, an inline clear button (x), and a password visibility toggle icon."
+        },
+        {
+          "name": "PrimaryButton",
+          "style": {
+            "background": "linear-gradient(90deg, #4A90E2, #7B61FF)",
+            "textColor": "#FFFFFF",
+            "cornerRadius": "25px",
+            "height": "50px",
+            "font": {
+              "size": "16px",
+              "weight": "600"
+            }
+          },
+          "description": "A prominent call-to-action button with a blue-to-purple gradient and fully rounded corners."
+        }
+      ]
+    },
+    {
+      "screenName": "Terms of Service Modal",
+      "fileName": "termsofservice.png",
+      "description": "A modal for displaying legal terms and requiring user consent. It features a long, scrollable text area and a clear action to proceed.",
+      "style": {
+        "backgroundColor": "#FFFFFF",
+        "primaryColor": "#6A00FF",
+        "textColor": {
+          "primary": "#111111",
+          "secondary": "#555555"
+        },
+        "font": {
+          "family": "Sans-Serif",
+          "headings": {
+            "size": "24px",
+            "weight": "700"
+          },
+          "body": {
+            "size": "14px",
+            "weight": "400"
+          }
+        },
+        "cornerRadius": "16px"
+      },
+      "structure": {
+        "layout": "Modal dialog with a header, scrollable body, and a fixed action footer.",
+        "header": {
+          "present": true,
+          "elements": ["Title", "Close Button (X)"]
+        },
+        "body": {
+          "components": ["ScrollableText", "CheckboxWithLabel"]
+        },
+        "footer": {
+          "present": true,
+          "elements": ["PrimaryButton"]
+        }
+      },
+      "components": [
+        {
+          "name": "CheckboxWithLabel",
+          "style": {
+            "boxColor": "#BDBDBD",
+            "textColor": "#333333"
+          },
+          "description": "A standard checkbox next to a text label containing a hyperlink for the Privacy Policy."
+        },
+        {
+          "name": "PrimaryButton",
+          "style": {
+            "background": "linear-gradient(90deg, #4A90E2, #7B61FF)",
+            "textColor": "#FFFFFF",
+            "cornerRadius": "25px",
+            "height": "50px",
+            "font": {
+              "size": "16px",
+              "weight": "600"
+            }
+          },
+          "description": "The main action button to confirm agreement."
+        }
+      ]
+    },
+    {
+      "screenName": "Home Screen",
+      "fileName": "home.png",
+      "description": "The main dashboard of the application, providing an overview of health assessments. It uses a card-based layout to organize different states of the assessment process.",
+      "style": {
+        "backgroundColor": "#F5F5F7",
+        "primaryColor": "#6A00FF",
+        "secondaryColor": "#E8EAF6",
+        "textColor": {
+          "primary": "#111111",
+          "secondary": "#666666"
+        },
+        "font": {
+          "family": "Sans-Serif",
+          "headings": {
+            "size": "28px",
+            "weight": "700"
+          },
+          "body": {
+            "size": "16px",
+            "weight": "500"
+          },
+          "subtext": {
+            "size": "12px",
+            "weight": "400"
+          }
+        },
+        "spacing": "Uses sections with distinct titles and generous padding around elements."
+      },
+      "structure": {
+        "layout": "Single-column, vertically stacked with clear sections.",
+        "header": {
+          "present": true,
+          "elements": ["Title", "More Options Icon (three dots)"]
+        },
+        "body": {
+          "components": ["ActionCard", "ProgressBar", "OutlinedButton", "LatestAssessmentLink"]
+        },
+        "footer": {
+          "present": true,
+          "elements": ["BottomNavigationBar"]
+        }
+      },
+      "components": [
+        {
+          "name": "ActionCard",
+          "style": {
+            "backgroundColor": "#FFFFFF",
+            "cornerRadius": "16px",
+            "shadow": "subtle"
+          },
+          "description": "A container for a specific task, like the Health Assessment. Contains an icon, title, description, and an action button."
+        },
+        {
+          "name": "OutlinedButton",
+          "style": {
+            "backgroundColor": "#FFFFFF",
+            "borderColor": "#6A00FF",
+            "textColor": "#6A00FF",
+            "cornerRadius": "25px",
+            "height": "50px",
+            "font": {
+              "size": "16px",
+              "weight": "600"
+            }
+          },
+          "description": "A secondary action button with a colored border and text."
+        },
+        {
+          "name": "ProgressBar",
+          "style": {
+            "backgroundColor": "#E0E0E0",
+            "progressColor": "#6A00FF",
+            "cornerRadius": "8px"
+          },
+          "description": "A simple bar to indicate completion status."
+        },
+        {
+          "name": "BottomNavigationBar",
+          "style": {
+            "backgroundColor": "#FFFFFF",
+            "activeColor": "#6A00FF",
+            "inactiveColor": "#757575"
+          },
+          "description": "A fixed navigation bar at the bottom with icons and labels for Home, Reports, New, and Settings."
+        }
+      ]
+    },
+    {
+      "screenName": "Profile / New Scan Form",
+      "fileName": "profile.png",
+      "description": "A full-screen form for users to input or confirm their personal health details like sex, height, weight, and medical history. Used for both initial profile setup and before a new scan.",
+      "style": {
+        "backgroundColor": "#FFFFFF",
+        "primaryColor": "#00B2FF",
+        "accentColor": "#6A00FF",
+        "textColor": {
+          "primary": "#333333",
+          "label": "#666666"
+        },
+        "font": {
+          "family": "Sans-Serif",
+          "headings": {
+            "size": "20px",
+            "weight": "600"
+          },
+          "body": {
+            "size": "14px",
+            "weight": "400"
+          }
+        },
+        "cornerRadius": "8px"
+      },
+      "structure": {
+        "layout": "Full-screen modal with a header, scrollable form, and a fixed action button at the bottom.",
+        "header": {
+          "present": true,
+          "elements": ["Back Arrow", "Title", "Close Button (X)"]
+        },
+        "body": {
+          "components": ["DropdownSelector", "TextInputField", "SegmentedControl", "StickyPrimaryButton"]
+        },
+        "footer": { "present": false }
+      },
+      "components": [
+        {
+          "name": "DropdownSelector",
+          "style": {
+            "backgroundColor": "#FFFFFF",
+            "borderColor": "#E0E0E0",
+            "cornerRadius": "8px"
+          },
+          "description": "A standard dropdown menu for selecting from a list of options."
+        },
+        {
+          "name": "SegmentedControl",
+          "style": {
+            "active": {
+              "backgroundColor": "#00B2FF",
+              "textColor": "#FFFFFF"
+            },
+            "inactive": {
+              "backgroundColor": "#EEEEEE",
+              "textColor": "#666666"
+            },
+            "cornerRadius": "18px"
+          },
+          "description": "A set of toggle buttons where only one can be selected at a time."
+        },
+        {
+          "name": "StickyPrimaryButton",
+          "style": {
+            "background": "linear-gradient(90deg, #4A90E2, #7B61FF)",
+            "textColor": "#FFFFFF",
+            "cornerRadius": "25px",
+            "height": "50px",
+            "font": {
+              "size": "16px",
+              "weight": "600"
+            }
+          },
+          "description": "The main 'Continue' button, which remains fixed at the bottom of the screen."
+        }
+      ]
+    },
+    {
+      "screenName": "Processing",
+      "fileName": "processing.png",
+      "description": "A full-screen loading state displayed after a user submits data, such as a health scan. Visually identical to the 'Initializing' screen but contextually different.",
+      "style": {
+        "backgroundColor": "#111111",
+        "primaryColor": "#00B2FF",
+        "textColor": {
+          "primary": "#FFFFFF"
+        },
+        "font": {
+          "family": "Sans-Serif",
+          "headings": {
+            "size": "24px",
+            "weight": "600"
+          }
+        }
+      },
+      "structure": {
+        "layout": "Full-screen, single-column, vertically and horizontally centered content.",
+        "header": { "present": false },
+        "body": {
+          "components": ["LoadingIndicator"]
+        },
+        "footer": { "present": false }
+      },
+      "components": [
+        {
+          "name": "LoadingIndicator",
+          "style": {
+            "textColor": "#FFFFFF",
+            "indicatorColor": "#00B2FF"
+          },
+          "description": "A text label ('Processing') with a thin, animated progress line underneath."
+        }
+      ]
+    },
+    {
+      "screenName": "Settings",
+      "fileName": "settings.png",
+      "description": "A screen that provides access to various application-level options like profile management, terms of service, and logging out. It uses a simple list-based navigation.",
+      "style": {
+        "backgroundColor": "#F5F5F7",
+        "primaryColor": "#6A00FF",
+        "textColor": {
+          "primary": "#111111"
+        },
+        "font": {
+          "family": "Sans-Serif",
+          "headings": {
+            "size": "28px",
+            "weight": "700"
+          },
+          "body": {
+            "size": "16px",
+            "weight": "400"
+          }
+        }
+      },
+      "structure": {
+        "layout": "Standard screen layout with a header, list view, and footer navigation.",
+        "header": {
+          "present": true,
+          "elements": ["Title", "More Options Icon (three dots)"]
+        },
+        "body": {
+          "components": ["ListItem"]
+        },
+        "footer": {
+          "present": true,
+          "elements": ["BottomNavigationBar"]
+        }
+      },
+      "components": [
+        {
+          "name": "ListItem",
+          "style": {
+            "backgroundColor": "transparent",
+            "divider": "thin line between items (implied)"
+          },
+          "description": "A tappable row in a list. Consists of a text label on the left and a chevron-right icon on the right to indicate navigation."
+        }
+      ]
+    },
+    {
+      "screenName": "Report View Modal",
+      "fileName": "report.png",
+      "description": "A modal displaying the results of a health assessment. The design uses tabs and expandable accordions to organize a large amount of information. This image shows a template/loading state.",
+      "style": {
+        "backgroundColor": "#FFFFFF",
+        "primaryColor": "#333333",
+        "accentColor": "#007BFF",
+        "textColor": {
+          "primary": "#333333",
+          "secondary": "#757575"
+        },
+        "font": {
+          "family": "Sans-Serif",
+          "headings": {
+            "size": "18px",
+            "weight": "500"
+          },
+          "body": {
+            "size": "14px",
+            "weight": "400"
+          }
+        },
+        "cornerRadius": "16px"
+      },
+      "structure": {
+        "layout": "Modal dialog with a header, tab navigation, and accordion sections.",
+        "header": {
+          "present": true,
+          "elements": ["Title/Date", "Close Button (X)"]
+        },
+        "body": {
+          "components": ["TabNavigation", "InfoBar", "Accordion"]
+        },
+        "footer": { "present": true, "elements": ["DisclaimerText"] }
+      },
+      "components": [
+        {
+          "name": "TabNavigation",
+          "style": {
+            "activeColor": "#333333",
+            "inactiveColor": "#757575",
+            "indicator": "Blue line under active tab"
+          },
+          "description": "A set of tabs ('Results', 'Risks', '3D Model') to switch between different views of the report."
+        },
+        {
+          "name": "Accordion",
+          "style": {
+            "divider": "thin line between items"
+          },
+          "description": "An expandable and collapsible section header (e.g., 'Insights') with a chevron-down icon to show/hide content."
+        },
+        {
+          "name": "DisclaimerText",
+          "style": {
+            "textColor": "#757575",
+            "font": {
+              "size": "12px"
+            }
+          },
+          "description": "A small-print legal or medical disclaimer at the bottom of the view."
+        }
+      ]
+    },
+    {
+      "screenName": "Example Report Prompt",
+      "fileName": "finishedreport.png",
+      "description": "A pop-up modal that encourages the user to view or download an example report. It uses a friendly, icon-driven list within a bordered card to highlight key features.",
+      "style": {
+        "backgroundColor": "#F0FAFF",
+        "primaryColor": "#00B2FF",
+        "textColor": {
+          "primary": "#333333",
+          "secondary": "#555555"
+        },
+        "font": {
+          "family": "Sans-Serif",
+          "headings": {
+            "size": "20px",
+            "weight": "600"
+          },
+          "body": {
+            "size": "14px",
+            "weight": "400"
+          }
+        },
+        "cornerRadius": "20px"
+      },
+      "structure": {
+        "layout": "Modal with a centered card inside. The card contains informational content and a primary action.",
+        "header": {
+          "present": true,
+          "elements": ["Close Button (X)"]
+        },
+        "body": {
+          "components": ["InfoCard", "IconListItem", "OutlinedButton"]
+        },
+        "footer": { "present": false }
+      },
+      "components": [
+        {
+          "name": "InfoCard",
+          "style": {
+            "backgroundColor": "#F0FAFF",
+            "borderColor": "#A0E6FF",
+            "borderWidth": "2px",
+            "cornerRadius": "20px"
+          },
+          "description": "The main container card for the prompt's content."
+        },
+        {
+          "name": "IconListItem",
+          "style": {
+            "iconColor": "#00B2FF"
+          },
+          "description": "A list item preceded by a decorative, thematic icon (a blue network/molecule symbol)."
+        },
+        {
+          "name": "OutlinedButton",
+          "style": {
+            "backgroundColor": "#FFFFFF",
+            "borderColor": "#00B2FF",
+            "textColor": "#00B2FF",
+            "cornerRadius": "25px",
+            "height": "50px",
+            "font": {
+              "size": "16px",
+              "weight": "600"
+            }
+          },
+          "description": "The primary call-to-action button, styled with a light blue outline."
+        }
+      ]
+    },
+    {
+      "screenName": "Clothing Instructions",
+      "fileName": "clothing.png",
+      "description": "An instructional carousel screen within a modal, guiding the user on the appropriate attire for an accurate body scan. It uses imagery and concise text.",
+      "style": {
+        "backgroundColor": "#FFFFFF",
+        "primaryColor": "#007AFF",
+        "textColor": {
+          "primary": "#000000",
+          "secondary": "#3C3C43",
+          "link": "#007AFF"
+        },
+        "font": {
+          "family": "Sans-Serif",
+          "headings": {
+            "size": "24px",
+            "weight": "700"
+          },
+          "body": {
+            "size": "16px",
+            "weight": "400"
+          }
+        }
+      },
+      "structure": {
+        "layout": "Full-screen modal with a header, body content featuring a large image, and a fixed footer button.",
+        "header": {
+          "present": true,
+          "elements": ["Back Arrow", "Close Button (X)"]
+        },
+        "body": {
+          "components": ["TextLink", "ImageCarousel", "PageIndicator"]
+        },
+        "footer": {
+          "present": true,
+          "elements": ["PrimaryButton"]
+        }
+      },
+      "components": [
+        {
+          "name": "PrimaryButton",
+          "style": {
+            "background": "linear-gradient(90deg, #4A90E2, #7B61FF)",
+            "textColor": "#FFFFFF",
+            "cornerRadius": "28px",
+            "height": "56px",
+            "font": {
+              "size": "18px",
+              "weight": "600"
+            }
+          },
+          "description": "A prominent 'Next' button with a blue-to-purple gradient and fully rounded corners."
+        },
+        {
+          "name": "PageIndicator",
+          "style": {
+            "activeColor": "#333333",
+            "inactiveColor": "#D1D1D6"
+          },
+          "description": "A series of dots indicating the user's position in a multi-step flow or carousel."
+        },
+        {
+          "name": "TextLink",
+          "style": {
+            "textColor": "#007AFF",
+            "textDecoration": "underline"
+          },
+          "description": "A hyperlink used for supplemental information, such as 'Why does clothing matter?'"
+        }
+      ]
+    },
+    {
+      "screenName": "Camera Screen Placeholder",
+      "fileName": "camerascreen.png",
+      "description": "A minimalist, dark-themed placeholder screen shown just before the camera interface is activated. It signals a transition to the scanning process.",
+      "style": {
+        "backgroundColor": "#1C1C1E",
+        "primaryColor": "#00B2FF",
+        "textColor": {
+          "primary": "#FFFFFF"
+        },
+        "font": {
+          "family": "Sans-Serif",
+          "headings": {
+            "size": "22px",
+            "weight": "500"
+          }
+        }
+      },
+      "structure": {
+        "layout": "Full-screen, with all content vertically and horizontally centered.",
+        "header": { "present": false },
+        "body": {
+          "components": ["LoadingIndicator"]
+        },
+        "footer": { "present": false }
+      },
+      "components": [
+        {
+          "name": "LoadingIndicator",
+          "style": {
+            "textColor": "#FFFFFF",
+            "indicatorColor": "#00B2FF"
+          },
+          "description": "A text label ('Camera Screen') with a thin line underneath, indicating a system state."
+        }
+      ]
+    },
+    {
+      "screenName": "Preparation Checklist",
+      "fileName": "beforepic.png",
+      "description": "A final preparation modal that presents a checklist to the user before they begin the photo-capture process. It uses icons for quick comprehension.",
+      "style": {
+        "backgroundColor": "#FFFFFF",
+        "primaryColor": "#6A00FF",
+        "textColor": {
+          "primary": "#000000",
+          "secondary": "#3C3C43",
+          "tertiary": "#8A8A8E",
+          "link": "#007AFF"
+        },
+        "font": {
+          "family": "Sans-Serif",
+          "headings": {
+            "size": "22px",
+            "weight": "600"
+          },
+          "body": {
+            "size": "16px",
+            "weight": "600"
+          },
+          "subtext": {
+            "size": "14px",
+            "weight": "400"
+          }
+        },
+        "cornerRadius": "16px"
+      },
+      "structure": {
+        "layout": "Modal dialog with a header, a list of instructions, and a footer with primary and secondary actions.",
+        "header": {
+          "present": true,
+          "elements": ["Close Button (X)"]
+        },
+        "body": {
+          "components": ["InstructionCard", "TextLink"]
+        },
+        "footer": {
+          "present": true,
+          "elements": ["PrimaryButton", "SecondaryTextButton"]
+        }
+      },
+      "components": [
+        {
+          "name": "InstructionCard",
+          "style": {
+            "backgroundColor": "#FFFFFF",
+            "cornerRadius": "12px",
+            "shadow": "subtle, to create depth against the white background",
+            "iconColor": "#333333"
+          },
+          "description": "A list item presented as a card, containing an outlined icon, a bold title, and a descriptive subtitle."
+        },
+        {
+          "name": "PrimaryButton",
+          "style": {
+            "background": "linear-gradient(90deg, #4A90E2, #7B61FF)",
+            "textColor": "#FFFFFF",
+            "cornerRadius": "28px",
+            "height": "56px"
+          },
+          "description": "The main 'Continue' action button."
+        },
+        {
+          "name": "SecondaryTextButton",
+          "style": {
+            "backgroundColor": "transparent",
+            "textColor": "#8A8A8E",
+            "font": {
+              "size": "16px",
+              "weight": "500"
+            }
+          },
+          "description": "A less prominent text-only button for a secondary action, like 'Skip'."
+        }
+      ]
+    }
+  ]
+}
+```

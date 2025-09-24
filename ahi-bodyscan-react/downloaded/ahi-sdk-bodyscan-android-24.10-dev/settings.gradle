@@ -1,0 +1,59 @@
+rootProject.name = "bodyscan"
+include ':AHIBodyScan'
+include ':AHIBodyScan:AHIBodyScanExample'
+include ':Common'
+include ':Common:CommonExample'
+include ':PartCamera'
+include ':PartCamera:benchmark'
+include ':PartCamera:PartCameraExample'
+include ':PartClassification'
+include ':PartClassification:benchmark'
+include ':PartClassification:PartClassificationExample'
+include ':PartContour'
+include ':PartContour:benchmark'
+include ':PartContour:PartContourExample'
+include ':PartPoseDetection'
+include ':PartPoseDetection:benchmark'
+include ':PartPoseDetection:PartPoseDetectionExample'
+include ':PartPoseInspection'
+include ':PartPoseInspection:benchmark'
+include ':PartPoseInspection:PartPoseInspectionExample'
+include ':PartResources'
+include ':PartResources:PartResourcesExample'
+include ':PartSegmentation'
+include ':PartSegmentation:benchmark'
+include ':PartSegmentation:PartSegmentationExample'
+include ':PartUI'
+include ':PartUI:PartUIExample'
+include ':PartAlignment'
+include ':PartAlignment:benchmark'
+include ':PartAlignment:PartAlignmentExample'
+include ':PartInversion'
+include ':PartInversion:benchmark'
+include ':PartInversion:PartInversionExample'
+
+// setup overrides for local development
+Properties properties = new Properties()
+def localPropsFile = new File('./local.properties')
+if (localPropsFile.exists()) {
+    properties.load(localPropsFile.newDataInputStream())
+    gradle.ext.ahi_sdk_common_android_local_dir = properties.getProperty('ahi_sdk_common_android_local_dir')
+    gradle.ext.ahi_sdk_multiscan_android_local_dir = properties.getProperty('ahi_sdk_multiscan_android_local_dir')
+}
+
+def localPropertyDefined(localProp) {
+    return gradle.ext.has(localProp) && gradle.ext.get(localProp) != "" && gradle.ext.get(localProp) != null
+}
+
+if (localPropertyDefined("ahi_sdk_common_android_local_dir")) {
+    include ':ahi-sdk-common-android'
+    project(':ahi-sdk-common-android').projectDir = new File(gradle.ext.ahi_sdk_common_android_local_dir)
+}
+
+if (localPropertyDefined("ahi_sdk_multiscan_android_local_dir")) {
+    include ':ahi-sdk-multiscan-android'
+    project(':ahi-sdk-multiscan-android').projectDir = new File(gradle.ext.ahi_sdk_multiscan_android_local_dir)
+}
+//
+//include ':opencv'
+//project(':opencv').projectDir = new File(opencvsdk + '/sdk')

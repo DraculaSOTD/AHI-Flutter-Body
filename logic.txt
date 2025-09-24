@@ -1,0 +1,1135 @@
+# AHI Body Scanning iOS SDK - Comprehensive Logic Documentation
+
+## TABLE OF CONTENTS
+1. [Project Overview](#project-overview)
+2. [Architecture & Module Structure](#architecture--module-structure)
+3. [Navigation Flow & Screen States](#navigation-flow--screen-states)
+4. [UI Components & Dependencies](#ui-components--dependencies)
+5. [Delegate System & Communication](#delegate-system--communication)
+6. [API Calls & Data Persistence](#api-calls--data-persistence)
+7. [Machine Learning Pipeline](#machine-learning-pipeline)
+8. [Complete Data Flow](#complete-data-flow)
+9. [Error Handling & Recovery](#error-handling--recovery)
+10. [Performance & Security](#performance--security)
+11. [Implementation Requirements](#implementation-requirements)
+
+---
+
+## PROJECT OVERVIEW
+
+The AHI Body Scanning iOS SDK is a sophisticated computer vision framework that uses machine learning to generate precise body measurements and 3D avatars from smartphone cameras. The system processes camera images through multiple AI models to extract body dimensions, composition metrics, and 3D geometry entirely on-device.
+
+**Key Capabilities:**
+- 14-joint human pose detection
+- Person silhouette segmentation
+- Body measurement calculation (chest, waist, hips, inseam)
+- Body composition analysis (fat, muscle, bone)
+- 3D mesh generation for avatars
+- Real-time user guidance and feedback
+
+**Technical Architecture:**
+- Modular delegate-based design with 15+ protocols
+- On-device CoreML and SVR model inference
+- Encrypted resource management
+- Multi-threading for performance optimization
+- Comprehensive error handling and recovery
+
+---
+
+## ARCHITECTURE & MODULE STRUCTURE
+
+### Core Framework Organization
+
+```
+AHIBodyScan/ (Main orchestrating framework)
+├── Source/Classes/Public/
+│   └── BodyScan.h/m                    # Main entry point
+├── Source/Classes/Private/
+│   ├── AHIBodyScanHandler.h/m          # Core processing orchestrator
+│   ├── AHIBodyScanProcessor.h/m        # Data processing utilities
+│   ├── AHIBodyScanValidator.h/m        # Input validation
+│   └── AHIBSModules.h/m                # Dependency injection
+
+Common/ (Foundation module with shared interfaces)
+├── Source/Classes/Public/
+│   ├── AHIBSCommon.h/m                 # Shared utilities
+│   ├── AHIBSCapture.h/m                # Core data structures
+│   ├── AHIBSErrorCodes.h/m             # Error definitions (170+ codes)
+│   └── [15 Delegate Protocol Files]    # Communication interfaces
+
+Processing Pipeline Modules:
+├── PartCamera/                         # Image capture & frame processing
+├── PartPoseDetection/                  # Joint detection via CoreML
+├── PartSegmentation/                   # Person silhouette extraction
+├── PartClassification/                 # Body measurement calculation
+├── PartContour/                        # Ideal contour generation
+├── PartInversion/                      # 3D mesh generation
+├── PartAlignment/                      # Device motion tracking
+├── PartPoseInspection/                 # Pose validation
+├── PartUI/                             # User interface components
+└── PartResources/                      # ML model & resource management
+
+CPP/ (C++ performance-critical operations)
+├── AHIBSInversion.cpp                  # 3D mesh processing
+├── AHIBSClassificationHelper.cpp       # Feature extraction
+├── AHIBSContourGen.cpp                 # Contour generation
+└── AHIBSSegmentationJointsHelper.cpp   # Joint-based segmentation
+```
+
+### Module Dependencies
+
+**Dependency Flow:**
+```
+AHIBodyScan → Common → [Processing Modules] → CPP/
+External: AHICommon, AHIMultiScan, AHIOpenCV
+```
+
+**Key External Dependencies:**
+- **AHIMultiScan**: License validation, resource management, user authorization
+- **AHICommon**: Networking, utilities, logging, theming
+- **AHIOpenCV**: Computer vision operations for image processing
+
+---
+
+## NAVIGATION FLOW & SCREEN STATES
+
+### Main Application Flow (AHIBodyScan/Example)
+
+**Primary Navigation Pattern:**
+```
+App Launch → Setup → Authorization → Download → Scan → Results → Details
+```
+
+**Screen Components:**
+1. **BodyScanViewController** (Main Entry Point)
+   - Setup status tracking
+   - User parameter input (height, weight, sex)
+   - Debug controls and feature flags
+   - Scan initiation and result display
+
+2. **Scanning Interface** (AHIBSViewController)
+   - Camera preview with real-time feedback
+   - Phase-based UI state management
+   - Contour overlay and user guidance
+   - Error handling and recovery
+
+3. **ResultsViewController** (Table-based Results Display)
+   - Measurements display (height, weight, chest, waist, hips)
+   - Capture thumbnail gallery
+   - Detailed classification results
+   - Navigation to capture details
+
+4. **CaptureDetailsViewController** (Individual Capture Inspection)
+   - Original image display
+   - Silhouette overlay toggle
+   - Capture metadata viewing
+
+### UI State Machine
+
+**AHIBSUIPhase Enumeration:**
+```objc
+typedef NS_ENUM(NSInteger, AHIBSUIPhase) {
+    AHIBSUIPhaseUnknown = 0,
+    AHIBSUIPhaseAlignment,        // Device orientation guidance
+    AHIBSUIPhasePositioning,      // User positioning with contour
+    AHIBSUIPhaseCaptureFront,     // Front pose capture
+    AHIBSUIPhaseCaptureSide,      # Side pose capture
+    AHIBSUIPhaseWaitingForResults, // Processing indicator
+    AHIBSUIPhaseTerminalError     // Error state with recovery
+};
+```
+
+**State Transitions:**
+```
+Unknown → Alignment (3s device stability)
+Alignment → Positioning (device aligned)
+Positioning → CaptureFront (user in contour 3s)
+CaptureFront → CaptureSide (front capture complete)
+CaptureSide → WaitingForResults (side capture complete)
+WaitingForResults → Completion (processing done)
+[Any State] → TerminalError (unrecoverable error)
+```
+
+### Screen Components & User Interactions
+
+**Setup Flow Methods:**
+- `setupButtonAction:` → `doSetup` → MultiScan.shared.setupWithConfig
+- `authorizeButtonAction:` → `authorizeUser` → MultiScan.shared.userAuthorizeForId
+- `downloadButtonAction:` → `downloadResources` → MultiScan.shared.downloadResourcesInForeground
+
+**Scanning Flow Methods:**
+- `initiateScanButtonAction:` → `initiateBodyScan` → MultiScan.shared.initiateScan
+- `initiateDebugScanButtonAction:` → `initiateDebugBodyScan` → BodyScan.initiateScanWithOptions
+
+**Result Flow Methods:**
+- `showLastResultButtonTapped:` → Present ResultsViewController
+- `didSelectRowAtIndexPath:` → Navigate to CaptureDetailsViewController
+
+---
+
+## UI COMPONENTS & DEPENDENCIES
+
+### Core UI Architecture
+
+**Main UI Controller:**
+- **AHIBSViewController**: Central UI orchestrator managing the complete scanning workflow
+- **State-driven UI**: Phase-based interface configuration
+- **Real-time feedback**: Camera preview with pose detection overlay
+
+**Key UI Components:**
+
+1. **Camera Layer (z-position 0):**
+   - **AHIBSCameraView**: AVFoundation-based camera with 720x1280 capture
+   - **AHIBSDebugCameraImageView**: Mock camera for testing
+   - **AHIBSUnitTestCameraImageView**: Unit test camera implementation
+
+2. **Overlay Layer (z-position 5):**
+   - **AHIBSOverlayView**: Main UI overlay aggregating sub-components
+   - **AHIBSContourOverlayView**: Dashed/solid contour rendering
+   - **AHIBSBorderView**: Positioning frame with corner indicators
+   - **AHIBigTextLabel**: Instructional text with SF Symbols
+
+3. **Skeleton Layer (z-position 6):**
+   - **AHIBSJointsSkeletonView**: Debug joint visualization
+   - Real-time pose detection display
+
+4. **Transition Layer (z-position 15):**
+   - **AHIBSCaptureTransitionView**: Flash animation during capture
+   - **AHIBSPopupView**: Bottom sheet informational popups
+
+**Interactive Components:**
+- **AHIBSIconButton**: SF Symbols-based controls
+- **AHIRoundedButton**: Primary/secondary action buttons
+- **AHIBSAlignmentView**: Device orientation guidance
+- **AHIBSErrorOverlayView**: Full-screen error display
+
+### UI Integration Points
+
+**Delegate Connections:**
+- **AHIBSBodyScanUIDelegate**: Main UI presentation protocol
+- **AHIBSCameraDelegate**: Camera operations and frame handling
+- **AHIBSCameraFrameHandlerDelegate**: Real-time frame processing
+
+**Key Integration Methods:**
+- `presentBodyScan:from:` (UI presentation)
+- `camera:didOutputSampleBuffer:` (frame processing)
+- `configureInterfaceForPhase:` (state-driven UI updates)
+
+**UI State Management:**
+- **Notification-based transitions**: NSNotificationCenter for phase changes
+- **Timer-based validation**: Automatic state progression
+- **Error debouncing**: Prevents UI flicker from transient errors
+
+---
+
+## DELEGATE SYSTEM & COMMUNICATION
+
+### Complete Delegate Protocol Architecture
+
+The system implements **15 delegate protocols** for modular communication:
+
+**1. AHIBSCameraDelegate** - Camera Operations
+```objc
+- (void)takeCapture:(NSDictionary *)metadata completion:(void (^)(AHIBSCapture *))completion;
+- (void)setFrameHandlerDelegate:(id<AHIBSCameraFrameHandlerDelegate>)delegate;
+```
+
+**2. AHIBSPoseDetectionDelegate** - Joint Detection
+```objc
+- (void)detect:(AHIBSPoseDetectionRequest)request 
+        capture:(AHIBSCapture *)capture 
+      resources:(id<AHIBSResourcesDelegate>)resources 
+     completion:(void (^)(AHIBSDetectedJointsCollection *))completion;
+```
+
+**3. AHIBSSegmentationDelegate** - Silhouette Extraction
+```objc
+- (void)segment:(AHIBSCapture *)capture 
+    contourMask:(UIImage *)contourMask 
+        profile:(AHIProfile)profile 
+      poseJoints:(AHIBSDetectedJointsCollection *)joints 
+      resources:(id<AHIBSResourcesDelegate>)resources 
+     completion:(void (^)(UIImage *, NSError *))completion;
+```
+
+**4. AHIBSClassificationDelegate** - Body Measurement
+```objc
+- (void)classify:(AHISex)sex 
+        heightCM:(double)heightCM 
+        weightKG:(double)weightKG 
+        captures:(NSArray<AHIBSCaptureGrouping *> *)captures 
+       resources:(id<AHIBSResourcesDelegate>)resources 
+      completion:(void (^)(NSDictionary *, NSError *))completion;
+```
+
+**5. AHIBSContourGeneratorDelegate** - Contour Processing
+```objc
+- (NSArray<NSValue *> *)generateIdealContour:(AHISex)sex 
+                                   heightCM:(double)heightCM 
+                                   weightKG:(double)weightKG 
+                                  imageSize:(CGSize)imageSize 
+                          alignmentZRadians:(double)alignmentZRadians 
+                                    profile:(AHIProfile)profile 
+                                  resources:(id<AHIBSResourcesDelegate>)resources;
+```
+
+**6. AHIBSInversionDelegate** - 3D Mesh Generation
+```objc
+- (void)invertWithName:(NSString *)name 
+                   sex:(AHISex)sex 
+              heightCM:(double)heightCM 
+              weightKG:(double)weightKG 
+               chestCM:(double)chestCM 
+               waistCM:(double)waistCM 
+                hipCM:(double)hipCM 
+              inseamCM:(double)inseamCM 
+               fitness:(double)fitness 
+             resources:(id<AHIBSResourcesDelegate>)resources 
+            completion:(void (^)(NSURL *, NSError *))completion;
+```
+
+**7. AHIBSAlignmentDelegate** - Device Motion
+```objc
+- (AHIBSAlignmentMotionData *)deviceMotion;
+- (BOOL)isDeviceAligned;
+- (void)start;
+- (void)stop;
+```
+
+**8. AHIBSPoseInspectionDelegate** - Pose Validation
+```objc
+- (AHIBSPoseInspectionDictionary *)inspect:(AHIBSDetectedJointsCollection *)joints 
+                               contourMask:(UIImage *)contourMask 
+                              optimalZones:(NSArray<AHIBSOptimalContourZone *> *)optimalZones 
+                                   profile:(AHIProfile)profile 
+                                 poseJoints:(AHIBSDetectedJointsCollection *)poseJoints;
+```
+
+**9. AHIBSResourcesDelegate** - Resource Management
+```objc
+- (void)getResource:(NSString *)name 
+               type:(AHIResourceType)type 
+         completion:(void (^)(id, NSError *))completion;
+```
+
+**10. AHIBSEventListenerDelegate** - Event Broadcasting
+```objc
+- (void)event:(NSString *)event meta:(NSDictionary *)meta;
+```
+
+**11. AHIBSBodyScanUIDelegate** - UI Management
+```objc
+- (void)presentBodyScan:(id<AHIDelegateScan>)scan from:(UIViewController *)viewController;
+```
+
+**12. AHIBSPermissionsDelegate** - Permission Management
+```objc
+- (NSArray<NSString *> *)permissions;
+- (BOOL)checkPermissions;
+```
+
+**13. AHIBSContourRendererDelegate** - Contour Visualization
+```objc
+- (UIImage *)drawDisplayContour:(NSArray<NSValue *> *)contour 
+                      imageSize:(CGSize)imageSize 
+                backgroundColor:(UIColor *)backgroundColor 
+                foregroundColor:(UIColor *)foregroundColor 
+                      lineSolid:(BOOL)lineSolid 
+                      lineColor:(UIColor *)lineColor 
+                   lineDashColor:(UIColor *)lineDashColor;
+```
+
+**14. AHIBSCameraFrameHandlerDelegate** - Frame Processing
+```objc
+- (void)camera:(id<AHIBSCameraDelegate>)camera didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer;
+```
+
+**15. AHIBSResourceModelDelegate** - Resource Model Interface
+```objc
+- (NSString *)name;
+- (AHIResourceType)resourceType;
+- (MLModel *)ml;
+```
+
+### Communication Patterns
+
+**1. Central Registry Pattern (AHIBSModules):**
+```objc
+@interface AHIBSModules : NSObject
+@property (strong, nonatomic) id<AHIBSEventListenerDelegate> eventListener;
+@property (strong, nonatomic) id<AHIBSResourcesDelegate> resources;
+@property (strong, nonatomic) id<AHIBSAlignmentDelegate> alignment;
+@property (strong, nonatomic) id<AHIBSCameraDelegate> camera;
+// ... additional delegates
+@end
+```
+
+**2. Observer Pattern (Event System):**
+- Non-blocking event notifications
+- Analytics and debugging integration
+- Loose coupling between components
+
+**3. Completion Handler Pattern:**
+- Asynchronous operation results
+- Error propagation through completion blocks
+- Resource cleanup on completion
+
+**4. Dependency Injection Pattern:**
+- Modular component initialization
+- Protocol-based loose coupling
+- Testable architecture with mock implementations
+
+---
+
+## API CALLS & DATA PERSISTENCE
+
+### Network Infrastructure
+
+**1. MultiScan Framework Integration:**
+```objc
+// Setup and initialization
+[[MultiScan shared] setupWithConfig:@{AHISetupToken: AHI_TOKEN} 
+                             scans:@[scan] 
+                        completion:^(NSError *error) { ... }];
+
+// User authorization
+[[MultiScan shared] userAuthorizeForId:@"SDKTEST" 
+                              withSalt:@"dead" 
+                            withClaims:@[@"beef"] 
+                            completion:^(NSError *error) { ... }];
+
+// Resource management
+[[MultiScan shared] areResourcesDownloadedWithCompletion:^(BOOL downloaded, NSError *error) { ... }];
+[[MultiScan shared] downloadResourcesInForeground];
+```
+
+**2. Resource Download System:**
+```objc
+// AHIRemoteAssetsHelper (External dependency)
+- Background downloads via NSURLSession
+- Signed URL generation for AWS CDN
+- File integrity validation
+- Progress tracking and error handling
+```
+
+**3. Authentication & Security:**
+```objc
+// JWT Token Authentication
+#define AHI_TOKEN @"eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9..."
+
+// License validation with RSA keys
+// Token expiration: 1814707537 (Unix timestamp)
+// Claims verification and user authorization
+```
+
+### Data Persistence Mechanisms
+
+**1. Local File Storage (ExampleBodyScanPersistance):**
+```objc
+// Scan result persistence
+- (void)saveResult:(NSDictionary *)result {
+    NSString *fileName = [NSString stringWithFormat:@"classification.%ld.json", timestamp];
+    // Save to NSDocumentDirectory
+}
+
+// Result retrieval
+- (NSArray<NSDictionary *> *)getAllResults {
+    // Load most recent 10 results for performance
+}
+```
+
+**2. Resource Caching System:**
+```objc
+// ML model caching in NSCachesDirectory
+// Temporary file cleanup after CoreML compilation
+// Encrypted model decryption and storage
+```
+
+**3. UserDefaults Integration:**
+```objc
+// Configuration persistence
+[NSUserDefaults.standardUserDefaults setInteger:selectedGender forKey:@"ahi.bodyscan.params.gender"];
+
+// Debug settings and feature flags
+// Session state management
+```
+
+**4. Bundle Resource Management:**
+```objc
+// Encrypted assets in PartResources/Assets/Encoded/
+// AES-128-CBC encryption with embedded keys
+// Steganographic API key extraction from logo images
+```
+
+### External Service Integration
+
+**1. AWS Services:**
+- **CodeCommit**: Private repository access
+- **CDN**: Signed URL generation for model downloads
+- **Environment Variables**: AWS_CDN_*, AWS_GIT_USER/PASS
+
+**2. GitHub Integration:**
+- Repository access with GH_GIT_USER/PASS
+- CocoaPods repository management
+
+**3. Data Collection Pipeline:**
+```objc
+// Optional data collection to local directories
+// Capture images and processing results
+// Session-based data organization
+```
+
+### Security Vulnerabilities
+
+**⚠️ Critical Security Issues:**
+1. **Hardcoded Encryption Keys**: RSA private keys embedded in source code
+2. **Static API Keys**: No key rotation mechanism
+3. **Steganographic Keys**: Hidden in logo images without secure extraction
+4. **No Secure Storage**: Missing Keychain/Secure Enclave integration
+
+---
+
+## MACHINE LEARNING PIPELINE
+
+### CoreML Models
+
+**1. Joint Detection Model (MYQJointModel.ml - ~29MB):**
+```
+Input: 3×368×368 RGB + 1×368×368 center map
+Output: 15-channel heatmap (14 joints + background)
+Inference Time: ~200-300ms
+Memory: ~50MB peak
+```
+
+**Joint Mapping:**
+- Head Top, Neck, Shoulders (L/R), Elbows (L/R), Hands (L/R)
+- Hips (L/R), Knees (L/R), Ankles (L/R)
+
+**2. Segmentation Model (MyqSegmentationModel.ml - ~15MB):**
+```
+Input: 3×256×256 RGB
+Output: Binary segmentation mask
+Inference Time: ~100-200ms
+Memory: ~30MB peak
+```
+
+**3. Classification Models (Multiple Versions):**
+- **V1, V2, V2.5, V3, V3.1**: Progressive improvements
+- **Gender-specific models**: V2/V3 have male/female variants
+- **TBFIM1**: Total Body Fat Index Mass model
+
+```
+Input: 126-dimensional feature vector
+Output: Body measurements (chest, waist, hip in cm)
+Inference Time: ~50-100ms per model
+```
+
+### SVR Models (48 Total)
+
+**Body Measurements (Gender-Specific, Multiple Versions):**
+```
+male/female_chest_svr_image_features (v1, v2, v3)
+male/female_waist_svr_image_features (v1, v2, v3)
+male/female_hip_svr_image_features (v1, v2, v3)
+male/female_inseam_svr_image_features (v1, v2, v3)
+```
+
+**Body Composition Analysis:**
+```
+weight_svr_image_features
+fat_svr_image_features
+gynoid_svr_image_features_UWA_all
+andriod_svr_image_features_UWA_all
+visceral_svr_image_features_UWA_all
+FFM_svr_image_features_UWA_all (Fat-Free Mass)
+thigh_svr_image_features_UWA_all
+```
+
+**3D Mesh Generation Models:**
+```
+Gender-specific models for vertices, faces, bone weights
+Laplacian rings for mesh deformation
+Covariance matrices and singular values
+Statistical shape model parameters
+```
+
+### Feature Extraction Pipeline
+
+**126-Dimensional Feature Vector Components:**
+1. **Height** (1 feature)
+2. **Weight** (1 feature)
+3. **Joint-based features** (~124 features):
+   - Joint positions and distances
+   - Body proportions and ratios
+   - Silhouette measurements
+   - Geometric relationships
+
+**Feature Extraction Implementation (CPP/AHIBSClassificationHelper.cpp):**
+```cpp
+// Original feature extraction
+extract_image_features_v1(front_silhouette, side_silhouette, joints, height, weight)
+
+// Enhanced feature extraction
+extract_image_features(front_silhouette, side_silhouette, joints, height, weight)
+```
+
+### ML Processing Pipeline
+
+**Complete Pipeline Flow:**
+```
+1. Image Capture (720×1280) → Preprocessing (resize, normalize)
+2. Pose Detection (CoreML) → Joint coordinates
+3. Segmentation (CoreML) → Person silhouette
+4. Feature Extraction (C++) → 126-dim vector
+5. Classification (Multiple CoreML) → Base measurements
+6. SVR Refinement (48 models) → Final measurements
+7. 3D Mesh Generation (C++) → OBJ file output
+```
+
+**Performance Characteristics:**
+- **Total Pipeline Time**: 600-1100ms
+- **Memory Usage**: 100-150MB peak
+- **Hardware Requirements**: iPhone 6s+ (A9+) for Neural Engine
+- **Model Storage**: ~200MB total encrypted models
+
+### Model Management
+
+**Resource Loading (AHIBSResources.mm):**
+```objc
+// Asynchronous model loading
+- (void)getResource:(NSString *)name 
+               type:(AHIResourceType)type 
+         completion:(void (^)(id resource, NSError *error))completion;
+
+// Model types: SVR, CoreML, Integer/Double/Float arrays
+// Encryption: AES-128-CBC decryption
+// Compilation: CoreML model compilation and caching
+```
+
+**Model Optimization:**
+- **Lazy Loading**: Models loaded on demand
+- **Preloading**: Critical models preloaded during UI phases
+- **Caching**: Compiled models cached in memory
+- **Cleanup**: Automatic resource cleanup after processing
+
+---
+
+## COMPLETE DATA FLOW
+
+### End-to-End Processing Pipeline
+
+**Phase 1: Initialization**
+```
+User Input (height, weight, sex) → AHIBSBodyScanOptions → Validation → AHIBodyScanHandler
+```
+
+**Phase 2: Camera Setup & Alignment**
+```
+Camera Initialization → Frame Capture → Alignment Processing → Phase Transition
+```
+
+**Phase 3: Pose Detection & Positioning**
+```
+CMSampleBuffer → Pose Detection (CoreML) → Joint Validation → Contour Generation → Position Validation
+```
+
+**Phase 4: Front Capture**
+```
+Stable Pose → Contour Display → User Alignment → Capture Trigger → Immediate Segmentation
+```
+
+**Phase 5: Side Capture**
+```
+Profile Switch → Position Revalidation → Side Contour → Final Capture → Processing Trigger
+```
+
+**Phase 6: ML Processing**
+```
+Capture Collection → Enhanced Joint Detection → Segmentation → Feature Extraction → Classification → SVR Refinement
+```
+
+**Phase 7: Result Assembly**
+```
+Measurements → Result Smoothing → Data Collection → Final Result Dictionary → UI Presentation
+```
+
+### Data Structure Transformations
+
+**Core Data Types:**
+```objc
+// Primary data container
+@interface AHIBSCapture : NSObject
+@property AVCapturePhoto *photo;
+@property UIImage *image;
+@property UIImage *silhouette;
+@property NSDictionary *meta;
+@end
+
+// Joint detection results
+@interface AHIBSDetectedJointsCollection : NSObject
+@property NSArray<AHIBSJointDictionary *> *faces;
+@property NSArray<AHIBSJointDictionary *> *bodies;
+@property NSError *error;
+@end
+
+// Capture pairing for processing
+@interface AHIBSCaptureGrouping : NSObject
+@property AHIBSCapture *frontCapture;
+@property AHIBSCapture *sideCapture;
+@property NSInteger frontIndex;
+@property NSInteger sideIndex;
+@end
+```
+
+**Transformation Pipeline:**
+```
+UIImage → CMSampleBuffer → CoreML Tensors → Joint Dictionary → Inspection Results → 
+Capture Metadata → Segmentation Masks → Feature Vectors → Classification Results → 
+Final Measurements Dictionary
+```
+
+### State Management
+
+**AHIBodyScanHandler State Variables:**
+```objc
+// Phase management
+@property AHIBSUIPhase currentPhase;
+@property NSTimeInterval phaseStartTime;
+
+// Capture management
+@property NSMutableArray<AHIBSCapture *> *frontCaptures;
+@property NSMutableArray<AHIBSCapture *> *sideCaptures;
+
+// Processing state
+@property BOOL isCaptureInProgress;
+@property AHIBSDetectedJointsCollection *poseJointsForScaling;
+
+// Error handling
+@property NSInteger errorDebounce;
+@property NSInteger jointsDebounce;
+@property NSInteger errorCount;
+```
+
+**Async Operations Management:**
+```objc
+// Queue management
+dispatch_queue_t _poseDetectionQueue;    // Serial queue for ML inference
+dispatch_queue_t _backgroundQueue;       // Background processing
+dispatch_queue_t _threadQueue;           // Result processing
+
+// Completion handlers
+AHIBFTaskCompletionSource *_taskCompletionSource;
+```
+
+### Performance Optimization
+
+**Threading Strategy:**
+- **Main Queue**: UI updates and user interaction
+- **Pose Detection Queue**: Serial queue for ML inference
+- **Background Queue**: Resource loading and processing
+- **Thread Queue**: Result assembly and completion
+
+**Memory Management:**
+- **Immediate Processing**: Reduces memory footprint
+- **Reference Counting**: Shared resource management
+- **Automatic Cleanup**: Resource deallocation on completion
+- **Model Pooling**: Reuse compiled models across sessions
+
+---
+
+## ERROR HANDLING & RECOVERY
+
+### Error Code Classification
+
+**Input Validation Errors (2000-2003):**
+```objc
+AHIBSErrorCodeInvalidHeight = 2000,
+AHIBSErrorCodeInvalidWeight = 2001,
+AHIBSErrorCodeBodyScanCancelledByUser = 2002,
+AHIBSErrorCodeInvalidOptions = 2003,
+```
+
+**System Errors (2004-2045):**
+```objc
+AHIBSErrorCodeResourceNotAvailable = 2004,
+AHIBSErrorCodeLicenseValidationFailed = 2005,
+AHIBSErrorCodeModelLoadingFailed = 2006,
+// ... additional system errors
+```
+
+**Processing Errors (2046-2162):**
+```objc
+AHIBSErrorCodeSegmentationFailed = 2046,
+AHIBSErrorCodeClassificationFailed = 2047,
+AHIBSErrorCodeJointDetectionFailed = 2048,
+// ... additional processing errors
+```
+
+### Error Recovery Mechanisms
+
+**1. Debouncing System:**
+```objc
+// Prevent transient errors from affecting UX
+self.errorDebounce = 3;  // 3 frames before error display
+self.jointsDebounce = 10; // 10 frames for pose stability
+```
+
+**2. Terminal Error Handling:**
+```objc
+// Error threshold management
+self.errorCount++;
+if (self.errorCount >= 12 || phaseDuration > 60.0) {
+    [self transitionToTerminalError];
+}
+```
+
+**3. Error Recovery Options:**
+```objc
+// User-facing error recovery
+- (void)resetSession {
+    self.currentPhase = AHIBSUIPhasePositioning;
+    self.errorCount = 0;
+    [self.frontCaptures removeAllObjects];
+    [self.sideCaptures removeAllObjects];
+}
+```
+
+**4. Graceful Degradation:**
+```objc
+// Fallback to previous successful state
+if (joints.error) {
+    // Use previous successful joint detection
+    joints = self.lastSuccessfulJoints;
+}
+```
+
+### Error Propagation Patterns
+
+**1. Completion Handler Propagation:**
+```objc
+[self.modules.poseDetection detect:request 
+                           capture:capture 
+                         resources:self.modules.resources 
+                        completion:^(AHIBSDetectedJointsCollection *result) {
+    if (result.error) {
+        completion(nil, result.error);
+        return;
+    }
+    // Continue processing...
+}];
+```
+
+**2. Promise-based Error Handling:**
+```objc
+[promise continueWithBlock:^id(AHIBFTask *task) {
+    if (task.error) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            _ShowErrorMessage(self, @"Task Error", task.error.localizedDescription);
+        });
+        return nil;
+    }
+    // Handle success...
+}];
+```
+
+**3. UI Error States:**
+```objc
+// Terminal error UI presentation
+- (void)transitionToTerminalError {
+    self.currentPhase = AHIBSUIPhaseTerminalError;
+    [self.viewController presentErrorWithMessage:errorMessage 
+                                         actions:@[retryAction, helpAction]];
+}
+```
+
+---
+
+## PERFORMANCE & SECURITY
+
+### Performance Characteristics
+
+**Model Inference Performance:**
+- **Joint Detection**: 200-300ms (MYQJointModel.ml, ~29MB)
+- **Segmentation**: 100-200ms (MyqSegmentationModel.ml, ~15MB)
+- **Classification**: 50-100ms per model (Multiple versions)
+- **SVR Processing**: 50-100ms (48 models)
+- **3D Mesh Generation**: 200-400ms (C++ implementation)
+- **Total Pipeline**: 600-1100ms end-to-end
+
+**Memory Management:**
+- **Peak Usage**: 100-150MB during processing
+- **Model Storage**: ~200MB encrypted models
+- **Runtime Caching**: Compiled models cached in memory
+- **Cleanup**: Automatic resource deallocation
+
+**Hardware Requirements:**
+- **Minimum**: iPhone 6s+ (A9 processor, iOS 13.4+)
+- **Recommended**: iPhone 8+ (A11+) for Neural Engine acceleration
+- **Memory**: 2GB+ RAM for optimal performance
+- **Storage**: 200MB+ available space
+
+### Security Analysis
+
+**⚠️ Critical Security Vulnerabilities:**
+
+**1. Hardcoded Encryption Keys:**
+```objc
+// RSA private keys embedded in source code
+static NSString *const RSA_PRIVATE_KEY = @"-----BEGIN RSA PRIVATE KEY-----...";
+```
+
+**2. Static API Keys:**
+```objc
+// JWT token with no rotation mechanism
+#define AHI_TOKEN @"eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9..."
+```
+
+**3. Steganographic Key Extraction:**
+```objc
+// API keys hidden in logo images
+// AHIBSTokenHelper extracts keys from steganographic images
+// No secure key storage or validation
+```
+
+**Security Recommendations:**
+1. **Keychain Integration**: Store encryption keys in iOS Keychain
+2. **Secure Enclave**: Utilize hardware security module
+3. **Key Rotation**: Implement dynamic key management
+4. **Certificate Pinning**: Validate server certificates
+5. **Token Refresh**: Implement JWT token refresh mechanism
+
+### Privacy Model
+
+**On-Device Processing:**
+- **No Data Transmission**: All ML processing occurs locally
+- **Local Storage**: Scan results stored in NSDocumentDirectory
+- **Temporary Files**: Automatic cleanup after processing
+- **No Biometric Upload**: Joint coordinates and measurements stay local
+
+**Data Collection (Optional):**
+```objc
+// Optional data collection for debugging
+// Stores captures and processing results locally
+// User consent mechanism not implemented
+```
+
+---
+
+## IMPLEMENTATION REQUIREMENTS
+
+### Development Environment Setup
+
+**Prerequisites:**
+- **Xcode 16.x** with iOS 13.4+ SDK
+- **CocoaPods** with private repository access
+- **AWS CodeCommit** authentication
+- **Git credentials** for private repositories
+
+**Private Repository Configuration:**
+```bash
+# Add AHI private CocoaPods repository
+pod repo add ahi-dev https://git-codecommit.ap-southeast-2.amazonaws.com/v1/repos/ahi-pod-ios-cocoapods
+
+# Environment variables
+export AWS_GIT_USER="your-aws-user"
+export AWS_GIT_PASS="your-aws-password"
+export GH_GIT_USER="your-github-user"
+export GH_GIT_PASS="your-github-password"
+```
+
+### Build System Configuration
+
+**CocoaPods Integration:**
+```ruby
+# AHIBodyScan.podspec structure
+Pod::Spec.new do |s|
+  s.name = 'AHIBodyScan'
+  s.version = '24.5.x'
+  s.ios.deployment_target = '13.4'
+  
+  # Core framework
+  s.subspec 'Core' do |core|
+    core.source_files = 'AHIBodyScan/Source/Classes/**/*.{h,m}'
+    core.dependency 'AHICommon'
+    core.dependency 'AHIMultiScan'
+  end
+  
+  # Processing modules
+  s.subspec 'Camera' do |camera|
+    camera.source_files = 'PartCamera/Source/Classes/**/*.{h,m}'
+  end
+  
+  # Additional subspecs for each module...
+end
+```
+
+**Build Configuration:**
+```bash
+# Prepare environment
+./prep.sh
+
+# Install dependencies
+cd AHIBodyScan/Example
+./install.sh
+
+# Build and test
+xcodebuild -workspace AHIBodyScan.xcworkspace \
+           -scheme AHIBodyScan-Example \
+           -destination 'platform=iOS Simulator,name=iPhone 12' \
+           -configuration Release \
+           test
+```
+
+### Integration Steps
+
+**1. Framework Integration:**
+```objc
+@import AHIBodyScan;
+@import AHIMultiScan;
+@import AHICommon;
+
+// Initialize body scan
+BodyScan *scan = [BodyScan new];
+scan.eventListener = [[CustomEventListener alloc] init];
+```
+
+**2. MultiScan Setup:**
+```objc
+// Setup MultiScan framework
+[[MultiScan shared] setupWithConfig:@{AHISetupToken: YOUR_TOKEN}
+                             scans:@[scan]
+                        completion:^(NSError *error) {
+    if (!error) {
+        // Proceed with authorization
+    }
+}];
+```
+
+**3. User Authorization:**
+```objc
+// Authorize user (implement proper authorization)
+[[MultiScan shared] userAuthorizeForId:userId
+                              withSalt:salt
+                            withClaims:claims
+                            completion:^(NSError *error) {
+    if (!error) {
+        // Proceed with resource download
+    }
+}];
+```
+
+**4. Resource Management:**
+```objc
+// Check and download resources
+[[MultiScan shared] areResourcesDownloadedWithCompletion:^(BOOL downloaded, NSError *error) {
+    if (!downloaded) {
+        [[MultiScan shared] downloadResourcesInForeground];
+    }
+}];
+```
+
+**5. Scan Initiation:**
+```objc
+// Initiate body scan
+NSDictionary *options = @{
+    @"cm_ent_height": @(height),
+    @"kg_ent_weight": @(weight),
+    @"enum_ent_sex": sex
+};
+
+[[MultiScan shared] initiateScan:@"body"
+                     withOptions:options
+                fromViewController:viewController
+                      completion:^(AHIBFTask *promise, NSError *error) {
+    if (!error) {
+        // Handle scan completion
+    }
+}];
+```
+
+### Custom Implementation Requirements
+
+**1. Event Listener Implementation:**
+```objc
+@interface CustomEventListener : NSObject <AHIBSEventListenerDelegate>
+@end
+
+@implementation CustomEventListener
+- (void)event:(NSString *)event meta:(NSDictionary *)meta {
+    // Handle events: photo captures, UX transitions, errors
+    NSLog(@"Event: %@ Meta: %@", event, meta);
+}
+@end
+```
+
+**2. Persistence Implementation:**
+```objc
+@interface CustomPersistence : NSObject <AHIDelegatePersistence>
+@end
+
+@implementation CustomPersistence
+- (void)saveResult:(NSDictionary *)result {
+    // Implement custom result storage
+}
+
+- (NSArray<NSDictionary *> *)getAllResults {
+    // Implement custom result retrieval
+}
+@end
+```
+
+**3. UI Customization:**
+```objc
+// Custom UI theme configuration
+// Implement custom overlay components
+// Handle custom error states and recovery
+```
+
+### Testing Framework
+
+**Unit Testing:**
+```bash
+# Run all tests
+./test_all_locally.sh
+
+# Run specific module tests
+cd PartClassification/Example
+./install.sh
+xcodebuild -workspace PartClassification.xcworkspace \
+           -scheme PartClassification-Example \
+           -destination 'platform=iOS Simulator,name=iPhone 12' \
+           test
+```
+
+**Test Coverage:**
+- **Kiwi Framework**: Unit testing framework
+- **Mock Objects**: MockMultiScan for testing
+- **Code Coverage**: Codecov integration
+- **Performance Tests**: ML model inference benchmarks
+
+---
+
+## CONCLUSION
+
+This comprehensive documentation provides a complete blueprint for understanding and replicating the AHI Body Scanning iOS SDK functionality. The system demonstrates sophisticated computer vision engineering with:
+
+**Key Technical Achievements:**
+- **Real-time ML Inference**: 600-1100ms total pipeline latency
+- **On-device Privacy**: No biometric data transmission
+- **Modular Architecture**: 15 delegate protocols for extensibility
+- **Robust Error Handling**: Comprehensive error codes and recovery
+- **Performance Optimization**: Multi-threading and resource management
+
+**Implementation Considerations:**
+- **Security Vulnerabilities**: Critical issues requiring immediate attention
+- **Hardware Requirements**: iPhone 6s+ with A9+ processor
+- **Resource Management**: 200MB+ storage for ML models
+- **Privacy Compliance**: On-device processing reduces regulatory burden
+
+**Replication Requirements:**
+- **iOS Development Environment**: Xcode 16.x with iOS 13.4+ SDK
+- **Private Repository Access**: AWS CodeCommit and GitHub credentials
+- **ML Model Development**: CoreML and SVR model training pipeline
+- **Computer Vision Expertise**: OpenCV and pose estimation knowledge
+
+This documentation serves as a complete reference for implementing a similar body scanning system with equivalent functionality, performance characteristics, and architectural patterns.

@@ -1,0 +1,14 @@
+[Unit]
+Description=AHI BodyScan Metrics API
+After=network.target
+
+[Service]
+Type=simple
+User=calvin
+WorkingDirectory=/home/calvin/Websites/AHI-new/ahi-bodyscan-react/monitoring
+ExecStart=/usr/bin/python3 /home/calvin/Websites/AHI-new/ahi-bodyscan-react/monitoring/metrics-api.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

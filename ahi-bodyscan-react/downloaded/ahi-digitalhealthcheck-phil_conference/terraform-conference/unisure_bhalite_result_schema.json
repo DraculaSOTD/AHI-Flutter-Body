@@ -1,0 +1,293 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "type": "object",
+    "properties": {
+        "session_id": {
+            "type": "string",
+            "description": "UUID generated identifier for the session."
+        },
+        "bool_ent_bpMedication": {
+            "type": "string",
+            "description": "Entry data indicating whether the user is currently taking blood pressure medication or not.",
+            "enum": [
+                "true",
+                "false"
+            ]
+        },
+        "cm_ent_height": {
+            "type": "integer",
+            "description": "Entry data indicating the user's height in centimeters.",
+            "minimum": 100,
+            "maximum": 250
+        },
+        "kg_ent_weight": {
+            "type": "integer",
+            "description": "Entry data indicating the user's reported weight in kilograms.",
+            "minimum": 30,
+            "maximum": 250
+        },
+        "date_ent_dob": {
+            "type": "string",
+            "description": "Entry data indicating the user's date of birth, formatted at YYYY-MM-DD."
+        },
+        "yr_raw_age": {
+            "type": "integer",
+            "description": "Entry data indicating the user's age in years, should date of birth not be provided."
+        },
+        "enum_ent_activityLevel": {
+            "type": "string",
+            "description": "Entry data indicating the user's speculated level of physical activity.",
+            "enum": [
+                "inactive",
+                "exercise10Mins",
+                "exercise20to60Mins",
+                "exercise1to3Hours",
+                "exerciseOver3Hours"
+            ]
+        },
+        "enum_ent_chronicMedication": {
+            "type": "string",
+            "description": "Entry data indicating the user's medication intake for diseases.",
+            "enum": [
+                "none",
+                "oneOrTwoDiseases",
+                "threeOrMoreDiseases"
+            ]
+        },
+        "enum_ent_sex": {
+            "type": "string",
+            "description": "Entry data indicating the user's biological sex.",
+            "enum": [
+                "male",
+                "female"
+            ]
+        },
+        "enum_ent_smoker": {
+            "type": "string",
+            "description": "Entry data indicating the user's smoking status.",
+            "enum": [
+                "never",
+                "former",
+                "current"
+            ]
+        },
+        "email": {
+            "type": "string",
+            "description": "Entry data indicating the user's email if provided."
+        },
+        "bpm_ent_restingHeartRate": {
+            "type": "string",
+            "description": "Result value for resting heart-rate, in beats-per-minute (BPM)."
+        },
+        "created_at": {
+            "type": "integer",
+            "description": "Unix timestamp (seconds since Epoch 1/1/1970 GMT), when session started."
+        },
+        "flt_raw_ibi": {
+            "type": "string"
+        },
+        "flt_raw_rmssd": {
+            "type": "string"
+        },
+        "flt_raw_sdnn": {
+            "type": "string"
+        },
+        "flt_raw_stressIndex": {
+            "type": "string"
+        },
+        "int_raw_oxygen": {
+            "type": "string",
+            "description": "Result value for Oxygen Saturation levels (SpO2)."
+        },
+        "int_raw_rr": {
+            "type": "string"
+        },
+        "mmHg_ent_diastolicBP": {
+            "type": "string",
+            "description": "Result value for Diastolic Blood Pressure (mmHg)."
+        },
+        "mmHg_ent_systolicBP": {
+            "type": "string",
+            "description": "Result value for Systolic Blood Pressure (mmHg)."
+        },
+        "questions_at": {
+            "type": "integer",
+            "description": "Unix timestamp (seconds since Epoch 1/1/1970 GMT), when questions all answered or provided."
+        },
+        "risk_adj_activityLevel": {
+            "type": "string"
+
+        },
+        "risk_adj_bapwv": {
+            "type": "string",
+            "description": "Risk value for the Arterial pressure/stiffness.",
+            "enum": [
+                "low",
+                "medium",
+                "high"
+            ]
+        },
+        "risk_adj_bloodPressure": {
+            "type": "string",
+            "description": "Risk value for the Blood Pressure.",
+            "enum": [
+                "low",
+                "medium",
+                "high"
+            ]
+        },
+        "risk_adj_bmi": {
+            "type": "string",
+            "description": "Risk value for the Body Mass Index.",
+            "enum": [
+                "low",
+                "medium",
+                "high"
+            ]
+        },
+        "risk_adj_chronicMedication": {
+            "type": "string",
+            "description": "Risk value for the use of medication for chronic diseases.",
+            "enum": [
+                "low",
+                "medium",
+                "high"
+            ]
+        },
+        "risk_adj_framinghamScore": {
+            "type": "string",
+            "description": "Risk value for the Framingham Score.",
+            "enum": [
+                "low",
+                "medium",
+                "high"
+            ]
+        },
+        "risk_adj_hdlC": {
+            "type": "string",
+            "description": "Risk value for HDL Cholesterol.",
+            "enum": [
+                "low",
+                "medium",
+                "high"
+            ]
+        },
+        "risk_adj_ldlC": {
+            "type": "string",
+            "description": "Risk value for LDL Cholesterol.",
+            "enum": [
+                "low",
+                "medium",
+                "high"
+            ]
+        },
+        "risk_adj_metSComp": {
+            "type": "string",
+            "description": "Risk value for Metabolic Syndrome.",
+            "enum": [
+                "low",
+                "medium",
+                "high"
+            ]
+        },
+        "risk_adj_restingFitness": {
+            "type": "string",
+            "description": "Risk value for Resting Fitness Level.",
+            "enum": [
+                "low",
+                "medium",
+                "high"
+            ]
+        },
+        "risk_adj_restingHeartRate": {
+            "type": "string",
+            "description": "Risk value for Resting Heart-Rate.",
+            "enum": [
+                "low",
+                "medium",
+                "high"
+            ]
+        },
+        "risk_adj_smokerStatus": {
+            "type": "string",
+            "description": "Risk value for Smoker Status.",
+            "enum": [
+                "low",
+                "medium",
+                "high"
+            ]
+        },
+        "risk_adj_tenYrCvd": {
+            "type": "string",
+            "description": "Risk value for 10-year Cardiovascular Syndrome.",
+            "enum": [
+                "low",
+                "medium",
+                "high"
+            ]
+        },
+        "risk_adj_totalCholesterol": {
+            "type": "string",
+            "description": "Risk value for Total Cholesterol.",
+            "enum": [
+                "low",
+                "medium",
+                "high"
+            ]
+        },
+        "risk_adj_triglycerides": {
+            "type": "string",
+            "description": "Risk value for Triglycerides.",
+            "enum": [
+                "low",
+                "medium",
+                "high"
+            ]
+        },
+        "updated_at": {
+            "type": "integer",
+            "description": "Unix timestamp (seconds since Epoch 1/1/1970 GMT), when session was last updated."
+        }
+    },
+    "anyOf":[
+        {"required": ["date_ent_dob"]},
+        {"required": ["yr_raw_age"]}
+    ],
+    "required": [
+        "session_id",
+        "bool_ent_bpMedication",
+        "bpm_ent_restingHeartRate",
+        "cm_ent_height",
+        "enum_ent_activityLevel",
+        "enum_ent_chronicMedication",
+        "enum_ent_sex",
+        "enum_ent_smoker",
+        "kg_ent_weight",
+        "created_at",
+        "flt_raw_ibi",
+        "flt_raw_rmssd",
+        "flt_raw_sdnn",
+        "flt_raw_stressIndex",
+        "int_raw_oxygen",
+        "int_raw_rr",
+        "mmHg_ent_diastolicBP",
+        "mmHg_ent_systolicBP",
+        "questions_at",
+        "risk_adj_activityLevel",
+        "risk_adj_bapwv",
+        "risk_adj_bloodPressure",
+        "risk_adj_bmi",
+        "risk_adj_chronicMedication",
+        "risk_adj_framinghamScore",
+        "risk_adj_hdlC",
+        "risk_adj_ldlC",
+        "risk_adj_metSComp",
+        "risk_adj_restingFitness",
+        "risk_adj_restingHeartRate",
+        "risk_adj_smokerStatus",
+        "risk_adj_tenYrCvd",
+        "risk_adj_totalCholesterol",
+        "risk_adj_triglycerides",
+        "updated_at"
+    ]
+}

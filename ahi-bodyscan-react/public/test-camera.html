@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Camera Test</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background: #f0f0f0;
+        }
+        #video {
+            width: 100%;
+            max-width: 600px;
+            height: auto;
+            background: #000;
+            display: block;
+            margin: 20px auto;
+            border: 2px solid #333;
+        }
+        #status {
+            text-align: center;
+            margin: 20px;
+            font-size: 18px;
+        }
+        button {
+            display: block;
+            margin: 20px auto;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .error {
+            color: red;
+        }
+        .success {
+            color: green;
+        }
+    </style>
+</head>
+<body>
+    <h1 style="text-align: center;">Camera Permission Test</h1>
+    <div id="status">Click the button to test camera access</div>
+    <button onclick="testCamera()">Test Camera Access</button>
+    <video id="video" autoplay playsinline></video>
+    
+    <script>
+        async function testCamera() {
+            const statusEl = document.getElementById('status');
+            const videoEl = document.getElementById('video');
+            
+            statusEl.textContent = 'Requesting camera permission...';
+            statusEl.className = '';
+            
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        facingMode: 'user',
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    },
+                    audio: false
+                });
+                
+                videoEl.srcObject = stream;
+                statusEl.textContent = 'Camera access granted! You should see the video stream below.';
+                statusEl.className = 'success';
+                
+                // Stop the stream after 10 seconds
+                setTimeout(() => {
+                    stream.getTracks().forEach(track => track.stop());
+                    videoEl.srcObject = null;
+                    statusEl.textContent = 'Camera stopped after 10 seconds. Click button to test again.';
+                    statusEl.className = '';
+                }, 10000);
+                
+            } catch (error) {
+                console.error('Camera error:', error);
+                statusEl.textContent = `Camera access failed: ${error.message}`;
+                statusEl.className = 'error';
+            }
+        }
+        
+        // Check if getUserMedia is supported
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            document.getElementById('status').textContent = 'Camera API not supported in this browser';
+            document.getElementById('status').className = 'error';
+            document.querySelector('button').disabled = true;
+        }
+    </script>
+</body>
+</html>

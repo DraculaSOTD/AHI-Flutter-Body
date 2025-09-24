@@ -1,0 +1,3007 @@
+# BUSINESS REQUIREMENTS DOCUMENT (BRD)
+# AHI BodyScan iOS SDK Application
+
+## 1. EXECUTIVE SUMMARY
+
+### 1.1 Project Overview
+The AHI BodyScan iOS SDK is a computer vision-based health technology application that enables accurate body measurement and composition analysis using only a smartphone's front-facing camera. The application uses advanced machine learning models to process captured images and provide comprehensive body metrics including circumference measurements, body fat percentage, and 3D mesh generation.
+
+### 1.2 Business Objectives
+- Provide contactless body measurement technology for health and fitness applications
+- Deliver clinical-grade accuracy (±2-3cm for circumferences, ±3-5% for body fat)
+- Enable rapid body composition analysis (complete scan in under 60 seconds)
+- Support both consumer and enterprise integration use cases
+- Maintain user privacy through on-device processing
+
+### 1.3 Target Users
+- Health and fitness mobile applications
+- Telehealth and remote monitoring platforms
+- Retail and fashion sizing applications
+- Enterprise wellness programs
+- Consumer health tracking applications
+
+### 1.4 Key Business Value Proposition
+- Eliminates need for traditional measuring tools or specialized hardware
+- Provides instant, accurate body measurements using standard smartphone camera
+- Maintains complete user privacy with local processing
+- Offers comprehensive body composition analysis beyond basic measurements
+- Enables new business models for remote health monitoring
+
+## 2. APPLICATION ARCHITECTURE
+
+### 2.1 System Architecture Overview
+The application follows a modular, delegate-based architecture with clear separation of concerns:
+
+**Core Framework Structure:**
+- AHIBodyScan (Main orchestrator)
+- Common (Shared interfaces and utilities)
+- 11 specialized Part* modules for specific functionality
+- CPP layer for performance-critical operations
+- External dependencies (AHICommon, AHIOpenCV, AHIMultiScan)
+
+### 2.2 Module Dependencies
+```
+AHIBodyScan (orchestrator)
+├── Common (shared interfaces and error handling)
+├── PartCamera (image capture and processing)
+├── PartPoseDetection (joint detection using CoreML)
+├── PartSegmentation (person silhouette extraction)
+├── PartClassification (body measurement calculation)
+├── PartContour (optimal positioning guidance)
+├── PartInversion (3D mesh generation)
+├── PartAlignment (device motion sensing)
+├── PartResources (ML model management)
+├── PartPoseInspection (pose validation)
+└── PartUI (user interface components)
+```
+
+### 2.3 Technology Stack
+- **Platform:** iOS 13.4+ (iPhone 6s+ recommended)
+- **Languages:** Objective-C/C++ (core), Swift (UI components)
+- **ML Framework:** CoreML 3.0+ with Neural Engine optimization
+- **Computer Vision:** OpenCV for image processing
+- **Build System:** CocoaPods with private repository distribution
+- **Testing:** Kiwi framework with comprehensive unit tests
+
+## 3. USER INTERFACE STRUCTURE
+
+### 3.1 Main Application Flow
+1. **Setup Phase** - SDK initialization and authentication
+2. **Configuration Phase** - User input and validation
+3. **Capture Phase** - Camera-based body scanning
+4. **Processing Phase** - ML analysis and calculation
+5. **Results Phase** - Measurement display and storage
+
+### 3.2 Screen Structure and Navigation
+
+#### 3.2.1 Main Body Scan Interface (BodyScanViewController)
+**Purpose:** Primary entry point for body scanning workflow
+**Components:**
+- User input form (height, weight, gender)
+- Configuration switches and debug options
+- Scan initiation controls
+- Real-time status display
+
+**Input Fields:**
+- Height: 50.0 - 255.0 cm (required, validated)
+- Weight: 16.0 - 300.0 kg (required, validated)
+- Gender: Male/Female selection (required for model selection)
+- Accuracy threshold: 0.94 - 0.97 (optional, advanced)
+
+**Debug Controls:**
+- Show skeleton overlay toggle
+- Mock camera mode toggle
+- Disable alignment validation
+- Use AHI Joint ML vs Apple Pose
+- Save intermediate captures
+- Filter results toggle
+
+#### 3.2.2 Camera Capture Interface (CameraViewController)
+**Purpose:** Real-time camera capture with pose guidance
+**Components:**
+- Live camera preview (720x1280 resolution)
+- Skeleton overlay for joint visualization
+- Contour guidance overlay
+- Real-time positioning feedback
+- Capture state indicators
+
+**UI States:**
+- Alignment phase (device positioning)
+- Positioning phase (user pose guidance)
+- Front capture phase
+- Side capture phase
+- Processing phase
+- Results/error phase
+
+#### 3.2.3 Alignment Interface (AlignmentViewController)
+**Purpose:** Device orientation and positioning guidance
+**Components:**
+- Gravity angle display
+- Device orientation indicators
+- Real-time alignment feedback
+- Visual guidance for optimal positioning
+
+#### 3.2.4 Results Display (ResultsViewController)
+**Purpose:** Measurement results and data visualization
+**Components:**
+- Table view with measurement categories
+- Body composition metrics display
+- Historical comparison (if available)
+- Export and sharing options
+
+#### 3.2.5 Capture Details (CaptureDetailsViewController)
+**Purpose:** Detailed view of captured images and processing results
+**Components:**
+- Image viewer with front/side toggle
+- Segmented control for image types
+- Joint overlay visualization
+- Processing metadata display
+
+### 3.3 UI Component Library
+
+#### 3.3.1 Camera Components
+- **AHIBSCameraView:** Main camera interface with depth support
+- **AHIBSJointsSkeletonView:** Joint detection overlay
+- **AHIBSDebugCameraImageView:** Debug visualization
+- **AHIBSUnitTestCameraImageView:** Testing interface
+
+#### 3.3.2 Overlay Components
+- **AHIBSOverlayView:** Primary guidance overlay
+- **AHIBSContourOverlayView:** Body contour visualization
+- **AHIBSErrorOverlayView:** Error state display
+- **AHIBSAlignmentView:** Device alignment guidance
+- **AHIBSPopupView:** Contextual messaging
+- **AHIBSCaptureTransitionView:** Animation transitions
+
+#### 3.3.3 Specialized UI Elements
+- **JointPointView:** Interactive joint positioning
+- **AHIBSSelectContourViewController:** Contour selection interface
+- **AHITapGestureRecognizer:** Custom gesture handling
+
+### 3.4 User Interaction Patterns
+- **Touch Gestures:** Tap for joint selection, pan for repositioning
+- **Real-time Validation:** Immediate feedback for input fields
+- **Progressive Disclosure:** Advanced options hidden by default
+- **Error Recovery:** Clear guidance for positioning corrections
+- **Haptic Feedback:** Tactile confirmation for pose detection
+
+## 4. CORE BUSINESS FUNCTIONALITY
+
+### 4.1 Primary Business Workflow
+
+#### 4.1.1 Setup and Authentication
+**Process:** SDK initialization with license verification
+**Requirements:**
+- RSA token-based authentication with hardcoded keys
+- User authorization binding for session management
+- Resource download with progress tracking (54+ MB total)
+- Camera permission validation
+
+**Business Rules:**
+- Valid license required for functionality
+- Network connection required for initial setup
+- Sufficient storage space for ML models
+- Camera access mandatory for operation
+
+#### 4.1.2 User Input and Validation
+**Process:** Collection and validation of user biometric data
+**Requirements:**
+- Height input with strict range validation (50-255 cm)
+- Weight input with strict range validation (16-300 kg)
+- Gender selection for model routing (Male/Female)
+- Optional accuracy threshold configuration
+
+**Validation Rules:**
+- Real-time input validation with immediate feedback
+- Prevent scan initiation with invalid parameters
+- Clear error messaging for out-of-range values
+- Automatic unit conversion support
+
+#### 4.1.3 Camera Capture Process
+**Process:** Dual-phase image capture with real-time guidance
+**Requirements:**
+- Front pose capture with joint detection
+- Side pose capture for profile analysis
+- Real-time positioning feedback and corrections
+- Quality validation before processing
+
+**Capture States:**
+1. **Alignment Phase:** Device positioning and orientation
+2. **Positioning Phase:** User pose guidance and validation
+3. **Front Capture:** Primary body measurement image
+4. **Side Capture:** Profile analysis image
+5. **Quality Check:** Validation of capture completeness
+
+**Positioning Requirements:**
+- Head within designated capture zone
+- Both ankles visible and properly positioned
+- Arms slightly away from body
+- Adequate lighting for segmentation
+- Device angle within ±1.5 degrees
+
+#### 4.1.4 Machine Learning Processing
+**Process:** Multi-stage ML pipeline for body analysis
+**Components:**
+- Joint detection using CoreML pose estimation (14 joints)
+- Person segmentation for silhouette extraction
+- Body classification using SVR models (48 specialized models)
+- 3D mesh generation for avatar creation (optional)
+
+**Processing Pipeline:**
+1. **Image Preprocessing:** Normalization and resizing
+2. **Joint Detection:** 14-point pose estimation with confidence
+3. **Segmentation:** Person extraction from background
+4. **Feature Extraction:** 126-dimensional feature vector
+5. **Classification:** Gender-specific SVR model inference
+6. **Post-processing:** Smoothing and validation
+
+### 4.2 Measurement Categories and Business Rules
+
+#### 4.2.1 Primary Measurements
+**Circumferences (cm):**
+- Chest circumference
+- Waist circumference  
+- Hip circumference
+- Thigh circumference
+- Inseam measurement
+
+**Body Composition (%):**
+- Body fat percentage
+- Fat-free mass percentage
+- Gynoid fat distribution
+- Android fat distribution
+- Visceral fat estimation
+
+**Weight Predictions (kg):**
+- Predicted weight validation
+- Weight-based composition adjustments
+
+#### 4.2.2 Accuracy Specifications
+- **Circumference Measurements:** ±2-3 cm typical accuracy
+- **Body Fat Percentage:** ±3-5% typical accuracy
+- **Weight Prediction:** ±2-4 kg typical accuracy
+- **Processing Latency:** 500-800ms total pipeline
+
+#### 4.2.3 Gender-Specific Processing
+- Separate male/female SVR models for enhanced accuracy
+- Gender-specific anatomical algorithms
+- Automatic model routing based on user input
+- Different measurement thresholds and validation rules
+
+### 4.3 Error Handling and Recovery
+
+#### 4.3.1 Error Classification System (2000-2999 range)
+**Input Validation Errors:**
+- Height/weight out of valid range
+- Missing required parameters
+- Invalid gender selection
+
+**Resource Management Errors:**
+- ML model download failures
+- Model compilation errors
+- Insufficient storage space
+
+**Camera and Capture Errors:**
+- Camera access denied
+- Capture quality insufficient
+- Lighting conditions inadequate
+
+**Processing Errors:**
+- Joint detection failures
+- Segmentation accuracy below threshold
+- Classification model errors
+
+#### 4.3.2 Recovery Mechanisms
+- **Progressive Error Counting:** Track repeated positioning issues
+- **Alternative Guidance:** Escalated messaging after error thresholds
+- **Graceful Degradation:** Continue with reduced accuracy when possible
+- **Session Recovery:** Ability to restart capture process
+- **Clear User Feedback:** Specific guidance for error correction
+
+#### 4.3.3 Terminal Error Conditions
+- Persistent inability to detect user in frame
+- Repeated failure to detect required joints (ankles)
+- Device positioning outside acceptable range
+- Processing timeout or system resource exhaustion
+
+### 4.4 Feature Configuration and Flags
+
+#### 4.4.1 Core Feature Flags
+- **useAhiJointMl** (default: YES): Use proprietary vs Apple pose detection
+- **useAverage** (default: YES): Enable historical measurement smoothing
+- **dataCollect** (default: NO): Save intermediate processing data
+- **useFastHeightValidation** (default: YES): Rapid positioning feedback
+
+#### 4.4.2 Debug and Development Options
+- **Skeleton Visualization:** Display detected joint overlay
+- **Mock Camera Mode:** Use test images for development
+- **Alignment Bypass:** Skip device orientation validation
+- **Processing Timing:** Capture performance metrics
+
+## 5. DATA MANAGEMENT AND STORAGE
+
+### 5.1 Current Data Architecture
+
+#### 5.1.1 Data Models and Structures
+**Core Data Objects:**
+- **AHIBSCapture:** Container for image data, metadata, and processing results
+- **AHIBSCaptureGrouping:** Pairing of front and side captures
+- **AHIBSDetectedJointsCollection:** Joint position data with confidence scores
+- **Classification Results:** Comprehensive measurement and composition data
+
+**Measurement Data Structure:**
+```
+{
+  "timestamp": "ISO-8601 datetime",
+  "user_inputs": {
+    "height_cm": 175.0,
+    "weight_kg": 70.0,
+    "gender": "male"
+  },
+  "measurements": {
+    "cm_raw_chest": 98.5,
+    "cm_raw_waist": 82.1,
+    "cm_raw_hips": 95.7,
+    "percent_raw_body_fat": 15.2,
+    "kg_predicted_weight": 69.8
+  },
+  "metadata": {
+    "model_version": "V3.1",
+    "processing_time_ms": 687,
+    "confidence_scores": {...}
+  }
+}
+```
+
+#### 5.1.2 Current Storage Mechanisms
+**Local File System:**
+- **Scan Results:** JSON files in Documents directory
+- **Captured Images:** Temporary storage during processing
+- **ML Models:** Cached in Caches directory after download
+- **Configuration:** UserDefaults for feature flags and settings
+
+**File Naming Conventions:**
+- Results: `classification.{timestamp}.json`
+- Images: `capture_{front|side}_{timestamp}.jpg`
+- Models: `{model_name}_{version}.{mlmodel|cereal}`
+
+#### 5.1.3 Current Network Dependencies
+**Resource Downloads:**
+- ML models and assets from AWS CDN (54+ MB)
+- Configuration and feature flags from remote servers
+- Authentication tokens and license validation
+
+**API Endpoints (Current):**
+- Resource download: `https://sdk.ahi.zone/ios/AHIBodyScan/`
+- Configuration: Remote config service
+- Authentication: Token validation service
+
+### 5.2 LOCAL DATABASE MIGRATION REQUIREMENTS
+
+#### 5.2.1 Database Endpoint Migration Strategy
+**CRITICAL REQUIREMENT:** All current database endpoints must be changed to local database implementation to eliminate network dependencies and ensure offline operation.
+
+**Migration Scope:**
+1. **Replace Remote ML Model Downloads** with embedded local storage
+2. **Replace Remote Configuration** with local configuration files
+3. **Replace Remote Authentication** with local license validation
+4. **Implement Local Cache Management** for all resources
+
+#### 5.2.2 Proposed Local Database Architecture
+
+**Core Data Implementation:**
+```
+Entities:
+- ScanSession (scan metadata and results)
+- UserProfile (height, weight, gender, preferences)
+- MeasurementHistory (historical results for smoothing)
+- ModelCache (local ML model management)
+- Configuration (feature flags and settings)
+```
+
+**SQLite Schema:**
+```sql
+-- Scan Sessions
+CREATE TABLE scan_sessions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+    user_id TEXT,
+    session_data TEXT, -- JSON blob
+    processing_status INTEGER,
+    created_at DATETIME,
+    updated_at DATETIME
+);
+
+-- User Profiles
+CREATE TABLE user_profiles (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id TEXT UNIQUE,
+    height_cm REAL,
+    weight_kg REAL,
+    gender TEXT,
+    preferences TEXT, -- JSON blob
+    created_at DATETIME,
+    updated_at DATETIME
+);
+
+-- Measurement History
+CREATE TABLE measurement_history (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id TEXT,
+    scan_session_id INTEGER,
+    measurement_type TEXT,
+    value REAL,
+    unit TEXT,
+    confidence REAL,
+    timestamp DATETIME,
+    FOREIGN KEY (scan_session_id) REFERENCES scan_sessions(id)
+);
+
+-- Model Cache Management
+CREATE TABLE model_cache (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    model_name TEXT UNIQUE,
+    model_version TEXT,
+    file_path TEXT,
+    checksum TEXT,
+    size_bytes INTEGER,
+    last_accessed DATETIME,
+    created_at DATETIME
+);
+
+-- Local Configuration
+CREATE TABLE configuration (
+    key TEXT PRIMARY KEY,
+    value TEXT,
+    data_type TEXT,
+    description TEXT,
+    updated_at DATETIME
+);
+```
+
+#### 5.2.3 Local Storage Implementation Requirements
+
+**Embedded ML Models:**
+- Package all 54+ MB of ML models in app bundle
+- Implement local model loading without network dependencies
+- Version management for model updates through app releases
+- Compress models for optimal app size
+
+**Local Configuration Management:**
+- Replace remote feature flags with local configuration files
+- Implement configuration override mechanism for development
+- Default configuration embedded in app bundle
+- User preference persistence in local database
+
+**Offline Authentication:**
+- Remove network-based license validation
+- Implement local license verification using embedded certificates
+- App Store or enterprise distribution validation
+- Remove dependency on remote token services
+
+#### 5.2.4 Data Persistence Strategy
+
+**Local-First Architecture:**
+- All user data stored locally by default
+- No automatic cloud synchronization
+- Optional data export for backup/transfer
+- Complete offline operation capability
+
+**Performance Optimization:**
+- Lazy loading of ML models to minimize memory usage
+- Background processing for non-critical operations
+- Efficient query patterns for measurement history
+- Cache management for optimal storage usage
+
+**Data Security:**
+- Local encryption for sensitive user data
+- Secure storage of biometric measurements
+- Privacy-preserving data handling
+- User-controlled data deletion
+
+### 5.3 Privacy and Security Considerations
+
+#### 5.3.1 Data Privacy Model
+- **Local Processing Only:** No biometric data transmitted externally
+- **User Data Control:** Complete user ownership of measurement data
+- **Minimal Data Collection:** Only essential data for functionality
+- **Transparent Processing:** Clear data usage policies
+
+#### 5.3.2 Security Requirements
+- **Local Encryption:** AES encryption for sensitive stored data
+- **Secure Key Management:** iOS Keychain integration
+- **Biometric Data Protection:** Secure handling of body measurements
+- **Privacy Compliance:** GDPR/CCPA compliance through local processing
+
+## 6. TECHNICAL REQUIREMENTS
+
+### 6.1 Performance Specifications
+
+#### 6.1.1 Processing Performance
+- **Total Scan Time:** 45-60 seconds end-to-end
+- **ML Inference Latency:** 500-800ms for complete pipeline
+- **Memory Usage:** Peak 150MB during processing
+- **CPU Utilization:** 40-60% during active inference
+- **Battery Impact:** Optimized for single-session scanning
+
+#### 6.1.2 Accuracy Requirements
+- **Circumference Measurements:** ±2-3 cm accuracy target
+- **Body Fat Percentage:** ±3-5% accuracy target
+- **Weight Prediction:** ±2-4 kg accuracy target
+- **Joint Detection:** 95%+ accuracy on visible joints
+- **Segmentation Quality:** IoU >0.85 for person extraction
+
+#### 6.1.3 Hardware Requirements
+**Minimum Requirements:**
+- iOS 13.4+ (CoreML 3.0+ support)
+- iPhone 6s or newer (A9+ processor)
+- 2GB+ RAM for model loading
+- 100MB+ available storage
+
+**Recommended Requirements:**
+- iOS 15.0+ for optimal performance
+- iPhone 8 or newer (A11+ with Neural Engine)
+- 4GB+ RAM for smooth operation
+- 500MB+ available storage for full functionality
+
+### 6.2 Integration Requirements
+
+#### 6.2.1 SDK Integration Points
+- **Host App Integration:** Drop-in SDK with minimal configuration
+- **Delegate Pattern:** 15+ delegate protocols for customization
+- **Result Callbacks:** Asynchronous result delivery
+- **Error Handling:** Comprehensive error reporting
+
+#### 6.2.2 Platform Dependencies
+- **CoreML Framework:** Machine learning inference
+- **Vision Framework:** Image processing and analysis
+- **AVFoundation:** Camera capture and management
+- **CoreMotion:** Device orientation and alignment
+- **UIKit:** User interface components
+
+### 6.3 Quality Assurance Criteria
+
+#### 6.3.1 Testing Requirements
+- **Unit Tests:** 80%+ code coverage across all modules
+- **Integration Tests:** End-to-end workflow validation
+- **Performance Tests:** Latency and memory usage validation
+- **Accuracy Tests:** Measurement precision validation
+- **Device Tests:** Cross-device compatibility testing
+
+#### 6.3.2 Validation Criteria
+- **Measurement Consistency:** <5% variation across repeated scans
+- **Processing Reliability:** <1% failure rate under normal conditions
+- **Error Recovery:** 100% recovery from recoverable errors
+- **Resource Management:** No memory leaks or resource exhaustion
+
+## 7. BUSINESS RULES AND VALIDATION
+
+### 7.1 Input Validation Rules
+
+#### 7.1.1 User Input Constraints
+**Height Validation:**
+- Range: 50.0 - 255.0 cm (strictly enforced)
+- Precision: 0.1 cm increments
+- Real-time validation with immediate feedback
+- Error message: "Height must be between 50 and 255 cm"
+
+**Weight Validation:**
+- Range: 16.0 - 300.0 kg (strictly enforced)
+- Precision: 0.1 kg increments
+- Real-time validation with immediate feedback
+- Error message: "Weight must be between 16 and 300 kg"
+
+**Gender Selection:**
+- Required field for model selection
+- Options: Male, Female
+- Determines SVR model routing
+- No default selection (explicit user choice required)
+
+#### 7.1.2 Capture Quality Validation
+**Pose Requirements:**
+- Head visible and within capture zone
+- Both ankles visible and properly positioned
+- Arms slightly away from body (not touching torso)
+- Facing camera directly (front pose)
+- Profile view visible (side pose)
+
+**Technical Quality Checks:**
+- Image resolution exactly 720x1280 pixels
+- Adequate lighting for segmentation
+- Device angle within ±1.5 degrees
+- Joint detection confidence >0.5 for critical joints
+- Person segmentation IoU >0.7
+
+### 7.2 Business Logic Rules
+
+#### 7.2.1 Gender-Specific Processing
+- Automatic model selection based on user input
+- Male models optimized for male body composition
+- Female models optimized for female body composition
+- Different measurement algorithms and thresholds
+- Gender-specific accuracy targets and validation
+
+#### 7.2.2 Historical Data Integration
+- Use last 10 measurements for smoothing calculations
+- Weight trending analysis for consistency
+- Outlier detection for significant deviations
+- Temporal validation for measurement plausibility
+- User notification for significant changes
+
+#### 7.2.3 Error Threshold Management
+- Maximum 12 positioning errors within 60-second session
+- Progressive error messaging (gentle → firm → alternative)
+- Terminal error conditions after persistent failures
+- Automatic session restart capability
+- Clear recovery guidance for users
+
+### 7.3 Regulatory and Compliance Considerations
+
+#### 7.3.1 Health Data Regulations
+- HIPAA consideration for healthcare integrations
+- Medical device regulations (FDA guidance awareness)
+- International health data protection requirements
+- Clinical validation requirements for medical use
+
+#### 7.3.2 Privacy Regulations
+- GDPR compliance through local processing
+- CCPA compliance with user data control
+- Biometric data classification and protection
+- User consent management requirements
+- Data portability and deletion rights
+
+## 8. IMPLEMENTATION RECOMMENDATIONS
+
+### 8.1 Database Migration Implementation Plan
+
+#### 8.1.1 Phase 1: Local Storage Foundation
+**Timeline:** 2-3 weeks
+**Objectives:**
+- Implement Core Data or SQLite database schema
+- Create data access layer (DAO pattern)
+- Migrate existing JSON persistence to database
+- Implement local configuration management
+
+**Deliverables:**
+- Database schema implementation
+- Data migration utilities
+- Local configuration framework
+- Unit tests for data layer
+
+#### 8.1.2 Phase 2: Offline ML Model Management
+**Timeline:** 3-4 weeks
+**Objectives:**
+- Embed ML models in app bundle
+- Remove network dependency for model loading
+- Implement local model version management
+- Optimize app size and loading performance
+
+**Deliverables:**
+- Embedded model loading system
+- Model compression and optimization
+- Local model cache management
+- Performance testing and optimization
+
+#### 8.1.3 Phase 3: Authentication Removal
+**Timeline:** 1-2 weeks
+**Objectives:**
+- Remove network-based license validation
+- Implement app-based licensing (App Store/Enterprise)
+- Remove token-based authentication system
+- Simplify SDK initialization process
+
+**Deliverables:**
+- Simplified SDK initialization
+- Local license validation
+- Removed network dependencies
+- Updated documentation and examples
+
+### 8.2 Architecture Optimization Recommendations
+
+#### 8.2.1 Performance Optimizations
+- **Lazy Loading:** Load ML models only when needed
+- **Memory Management:** Efficient model instance pooling
+- **Background Processing:** Non-blocking operations where possible
+- **Cache Optimization:** Intelligent model and result caching
+
+#### 8.2.2 User Experience Improvements
+- **Faster Initialization:** Remove network delays
+- **Offline Operation:** Complete functionality without network
+- **Consistent Performance:** Eliminate network-dependent variability
+- **Privacy Enhancement:** Local-only data processing guarantee
+
+#### 8.2.3 Maintenance and Updates
+- **App Store Updates:** Model updates through app releases
+- **Configuration Management:** Local override capabilities
+- **Debugging Support:** Enhanced local logging and diagnostics
+- **Testing Framework:** Comprehensive offline testing capabilities
+
+### 8.3 Risk Mitigation Strategies
+
+#### 8.3.1 Technical Risks
+- **App Size Increase:** Model compression and optimization
+- **Performance Impact:** Efficient loading and memory management
+- **Compatibility Issues:** Comprehensive device testing
+- **Update Complexity:** Streamlined release process
+
+#### 8.3.2 Business Risks
+- **Functionality Loss:** Maintain feature parity
+- **Integration Disruption:** Backward compatibility preservation
+- **Compliance Issues:** Privacy and security validation
+- **User Experience Degradation:** Performance monitoring and optimization
+
+## 9. SECURITY REMEDIATION GUIDE (CRITICAL PRIORITY)
+
+### 9.1 Critical Security Vulnerabilities Identified
+
+#### 9.1.1 Hardcoded Encryption Keys (SEVERE)
+**Location:** `PartResources/Assets/encrypt.sh`
+**Issue:** AES-128-CBC encryption keys and IV stored in plaintext in source code
+**Risk Level:** CRITICAL - Complete compromise of encrypted assets
+
+**Current Implementation:**
+```bash
+# VULNERABLE CODE - DO NOT USE
+ENCRYPTION_KEY="4a93bd83a4f80590338f66248e9bdb60"
+ENCRYPTION_IV="8b8c09de7fd6e8d96e4f3ed5fe83324e"
+```
+
+**Impact:**
+- All encrypted ML models can be decrypted by anyone with source access
+- Authentication tokens and API keys can be extracted
+- Complete compromise of asset protection mechanisms
+
+#### 9.1.2 Hardcoded RSA Private Keys (SEVERE)
+**Location:** `PartResources/Source/Classes/Private/AHIBSResources.mm` (lines 17-45)
+**Issue:** RSA private keys embedded directly in source code
+**Risk Level:** CRITICAL - Authentication system compromise
+
+**Impact:**
+- License validation can be bypassed
+- Unauthorized access to protected resources
+- Token forgery and impersonation attacks
+- Complete authentication system compromise
+
+#### 9.1.3 Steganographic API Keys (MEDIUM)
+**Location:** Logo image assets with embedded secrets
+**Issue:** API keys hidden in image files using steganography
+**Risk Level:** MEDIUM - Security through obscurity
+
+### 9.2 Security Remediation Implementation Plan
+
+#### 9.2.1 Phase 1: Immediate Actions (Week 1)
+**Priority: CRITICAL - Implement immediately**
+
+**Remove Hardcoded Keys:**
+```objective-c
+// BEFORE (VULNERABLE)
+static const char* encryptionKey = "4a93bd83a4f80590338f66248e9bdb60";
+
+// AFTER (SECURE)
+- (NSString *)getEncryptionKey {
+    NSData *keyData = [self loadKeyFromKeychain:@"AHIBodyScan.EncryptionKey"];
+    if (!keyData) {
+        keyData = [self generateSecureKey];
+        [self storeKeyInKeychain:keyData forKey:@"AHIBodyScan.EncryptionKey"];
+    }
+    return [[NSString alloc] initWithData:keyData encoding:NSUTF8StringEncoding];
+}
+```
+
+**iOS Keychain Integration:**
+```objective-c
+- (BOOL)storeKeyInKeychain:(NSData *)keyData forKey:(NSString *)keyIdentifier {
+    NSDictionary *keychainQuery = @{
+        (__bridge id)kSecClass: (__bridge id)kSecClassGenericPassword,
+        (__bridge id)kSecAttrService: @"AHIBodyScan",
+        (__bridge id)kSecAttrAccount: keyIdentifier,
+        (__bridge id)kSecValueData: keyData,
+        (__bridge id)kSecAttrAccessible: (__bridge id)kSecAttrAccessibleWhenUnlockedThisDeviceOnly
+    };
+    
+    OSStatus status = SecItemAdd((__bridge CFDictionaryRef)keychainQuery, NULL);
+    return status == errSecSuccess;
+}
+
+- (NSData *)loadKeyFromKeychain:(NSString *)keyIdentifier {
+    NSDictionary *keychainQuery = @{
+        (__bridge id)kSecClass: (__bridge id)kSecClassGenericPassword,
+        (__bridge id)kSecAttrService: @"AHIBodyScan",
+        (__bridge id)kSecAttrAccount: keyIdentifier,
+        (__bridge id)kSecReturnData: @YES,
+        (__bridge id)kSecMatchLimit: (__bridge id)kSecMatchLimitOne
+    };
+    
+    CFDataRef keyData = NULL;
+    OSStatus status = SecItemCopyMatching((__bridge CFDictionaryRef)keychainQuery, (CFTypeRef *)&keyData);
+    
+    if (status == errSecSuccess) {
+        return (__bridge_transfer NSData *)keyData;
+    }
+    return nil;
+}
+```
+
+#### 9.2.2 Phase 2: Secure Key Generation (Week 2)
+**Implement Secure Random Key Generation:**
+```objective-c
+- (NSData *)generateSecureKey {
+    NSMutableData *keyData = [NSMutableData dataWithLength:32]; // 256-bit key
+    int result = SecRandomCopyBytes(kSecRandomDefault, 32, keyData.mutableBytes);
+    
+    if (result != errSecSuccess) {
+        @throw [NSException exceptionWithName:@"SecurityException" 
+                           reason:@"Failed to generate secure random key" 
+                         userInfo:nil];
+    }
+    return keyData;
+}
+
+- (NSData *)generateSecureIV {
+    NSMutableData *ivData = [NSMutableData dataWithLength:16]; // 128-bit IV
+    int result = SecRandomCopyBytes(kSecRandomDefault, 16, ivData.mutableBytes);
+    
+    if (result != errSecSuccess) {
+        @throw [NSException exceptionWithName:@"SecurityException" 
+                           reason:@"Failed to generate secure random IV" 
+                         userInfo:nil];
+    }
+    return ivData;
+}
+```
+
+#### 9.2.3 Phase 3: Authentication System Redesign (Week 3-4)
+**Replace RSA Key-Based Authentication:**
+```objective-c
+// App Store/Enterprise Distribution Validation
+- (BOOL)validateAppDistribution {
+    NSString *bundleID = [[NSBundle mainBundle] bundleIdentifier];
+    NSString *expectedBundleID = @"com.ahi.bodyscan";
+    
+    if (![bundleID isEqualToString:expectedBundleID]) {
+        return NO;
+    }
+    
+    // Verify app signature and provisioning profile
+    return [self validateAppSignature];
+}
+
+- (BOOL)validateAppSignature {
+    // Use iOS app signature validation
+    NSDictionary *infoPlist = [[NSBundle mainBundle] infoDictionary];
+    NSString *bundleVersion = infoPlist[@"CFBundleVersion"];
+    
+    // Implement signature verification logic
+    return YES; // Simplified for example
+}
+```
+
+### 9.3 Secure Asset Protection Implementation
+
+#### 9.3.1 Advanced Encryption Strategy
+**AES-256-GCM Implementation:**
+```objective-c
+- (NSData *)encryptData:(NSData *)data withKey:(NSData *)key {
+    size_t bufferSize = data.length + kCCBlockSizeAES128;
+    void *buffer = malloc(bufferSize);
+    
+    size_t numBytesEncrypted = 0;
+    CCCryptorStatus cryptStatus = CCCrypt(
+        kCCEncrypt,
+        kCCAlgorithmAES,
+        kCCOptionPKCS7Padding,
+        key.bytes, key.length,
+        NULL, // IV should be random for each encryption
+        data.bytes, data.length,
+        buffer, bufferSize,
+        &numBytesEncrypted
+    );
+    
+    if (cryptStatus == kCCSuccess) {
+        return [NSData dataWithBytesNoCopy:buffer length:numBytesEncrypted];
+    }
+    
+    free(buffer);
+    return nil;
+}
+```
+
+#### 9.3.2 Key Derivation Implementation
+```objective-c
+- (NSData *)deriveKeyFromPassword:(NSString *)password salt:(NSData *)salt {
+    NSData *passwordData = [password dataUsingEncoding:NSUTF8StringEncoding];
+    NSMutableData *derivedKey = [NSMutableData dataWithLength:32];
+    
+    int result = CCKeyDerivationPBKDF(
+        kCCPBKDF2,
+        passwordData.bytes, passwordData.length,
+        salt.bytes, salt.length,
+        kCCPRFHmacAlgSHA256,
+        100000, // iterations
+        derivedKey.mutableBytes, derivedKey.length
+    );
+    
+    return (result == kCCSuccess) ? derivedKey : nil;
+}
+```
+
+### 9.4 Security Testing and Validation
+
+#### 9.4.1 Security Test Cases
+```objective-c
+// Unit tests for security functions
+- (void)testKeychainKeyStorage {
+    NSData *testKey = [@"test_key_data" dataUsingEncoding:NSUTF8StringEncoding];
+    BOOL stored = [self.securityManager storeKeyInKeychain:testKey forKey:@"test_key"];
+    XCTAssertTrue(stored, @"Key storage should succeed");
+    
+    NSData *retrievedKey = [self.securityManager loadKeyFromKeychain:@"test_key"];
+    XCTAssertEqualObjects(testKey, retrievedKey, @"Retrieved key should match stored key");
+}
+
+- (void)testEncryptionDecryption {
+    NSData *testData = [@"sensitive_data" dataUsingEncoding:NSUTF8StringEncoding];
+    NSData *key = [self.securityManager generateSecureKey];
+    
+    NSData *encrypted = [self.securityManager encryptData:testData withKey:key];
+    NSData *decrypted = [self.securityManager decryptData:encrypted withKey:key];
+    
+    XCTAssertEqualObjects(testData, decrypted, @"Decrypted data should match original");
+}
+```
+
+#### 9.4.2 Security Audit Checklist
+- [ ] All hardcoded keys removed from source code
+- [ ] iOS Keychain integration implemented and tested
+- [ ] Secure random key generation implemented
+- [ ] Authentication system redesigned without hardcoded keys
+- [ ] Encryption upgraded to AES-256-GCM
+- [ ] Key derivation functions implemented
+- [ ] Security unit tests passing
+- [ ] Code review completed for security vulnerabilities
+- [ ] Penetration testing performed
+- [ ] Security documentation updated
+
+## 10. DATABASE MIGRATION IMPLEMENTATION GUIDE
+
+### 10.1 Migration Architecture Overview
+
+#### 10.1.1 Current State Analysis
+**Network Dependencies to Remove:**
+- ML model downloads from AWS CDN (54+ MB)
+- Remote configuration service calls
+- Token-based authentication with remote validation
+- Feature flag retrieval from cloud services
+
+**Local Storage Requirements:**
+- Embed all ML models in app bundle
+- Local SQLite database for scan results and user data
+- Local configuration file management
+- Offline authentication and license validation
+
+#### 10.1.2 Target Architecture
+```
+Local-Only Architecture:
+App Bundle
+├── Embedded ML Models (54+ MB)
+├── Local Configuration Files
+├── SQLite Database (User Data)
+├── Core Data Stack (Optional)
+└── Local License Validation
+```
+
+### 10.2 Database Schema Implementation
+
+#### 10.2.1 Core Data Model Design
+```objective-c
+// ScanSession Entity
+@interface ScanSession : NSManagedObject
+@property (nonatomic, strong) NSString *sessionID;
+@property (nonatomic, strong) NSDate *timestamp;
+@property (nonatomic, strong) NSString *userID;
+@property (nonatomic, strong) NSData *sessionData; // JSON blob
+@property (nonatomic, assign) int16_t processingStatus;
+@property (nonatomic, strong) NSDate *createdAt;
+@property (nonatomic, strong) NSDate *updatedAt;
+@property (nonatomic, strong) NSSet<MeasurementResult *> *measurements;
+@end
+
+// UserProfile Entity
+@interface UserProfile : NSManagedObject
+@property (nonatomic, strong) NSString *userID;
+@property (nonatomic, assign) float heightCm;
+@property (nonatomic, assign) float weightKg;
+@property (nonatomic, strong) NSString *gender;
+@property (nonatomic, strong) NSData *preferences; // JSON blob
+@property (nonatomic, strong) NSDate *createdAt;
+@property (nonatomic, strong) NSDate *updatedAt;
+@property (nonatomic, strong) NSSet<ScanSession *> *scanSessions;
+@end
+
+// MeasurementResult Entity
+@interface MeasurementResult : NSManagedObject
+@property (nonatomic, strong) NSString *measurementType;
+@property (nonatomic, assign) float value;
+@property (nonatomic, strong) NSString *unit;
+@property (nonatomic, assign) float confidence;
+@property (nonatomic, strong) NSDate *timestamp;
+@property (nonatomic, strong) ScanSession *scanSession;
+@end
+```
+
+#### 10.2.2 SQLite Implementation Alternative
+```sql
+-- Complete database schema for local storage
+CREATE TABLE IF NOT EXISTS scan_sessions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    session_id TEXT UNIQUE NOT NULL,
+    user_id TEXT NOT NULL,
+    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+    session_data TEXT, -- JSON blob with capture details
+    processing_status INTEGER DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS user_profiles (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id TEXT UNIQUE NOT NULL,
+    height_cm REAL NOT NULL,
+    weight_kg REAL NOT NULL,
+    gender TEXT NOT NULL CHECK (gender IN ('male', 'female')),
+    preferences TEXT, -- JSON blob
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS measurement_results (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    scan_session_id INTEGER NOT NULL,
+    measurement_type TEXT NOT NULL,
+    value REAL NOT NULL,
+    unit TEXT NOT NULL,
+    confidence REAL DEFAULT 1.0,
+    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (scan_session_id) REFERENCES scan_sessions(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS model_cache (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    model_name TEXT UNIQUE NOT NULL,
+    model_version TEXT NOT NULL,
+    file_path TEXT NOT NULL,
+    checksum TEXT,
+    size_bytes INTEGER,
+    last_accessed DATETIME DEFAULT CURRENT_TIMESTAMP,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS local_configuration (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL,
+    data_type TEXT DEFAULT 'string',
+    description TEXT,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Indexes for performance
+CREATE INDEX idx_scan_sessions_user_id ON scan_sessions(user_id);
+CREATE INDEX idx_scan_sessions_timestamp ON scan_sessions(timestamp);
+CREATE INDEX idx_measurement_results_session_id ON measurement_results(scan_session_id);
+CREATE INDEX idx_measurement_results_type ON measurement_results(measurement_type);
+CREATE INDEX idx_model_cache_name ON model_cache(model_name);
+```
+
+### 10.3 Data Access Layer Implementation
+
+#### 10.3.1 Database Manager Design
+```objective-c
+@interface AHIBSDatabaseManager : NSObject
+
++ (instancetype)sharedManager;
+
+// Scan Session Management
+- (BOOL)saveScanSession:(NSDictionary *)sessionData forUser:(NSString *)userID;
+- (NSArray<NSDictionary *> *)getScanSessionsForUser:(NSString *)userID;
+- (NSDictionary *)getLatestScanSessionForUser:(NSString *)userID;
+- (BOOL)deleteScanSession:(NSString *)sessionID;
+
+// User Profile Management
+- (BOOL)saveUserProfile:(NSDictionary *)profileData;
+- (NSDictionary *)getUserProfile:(NSString *)userID;
+- (BOOL)updateUserProfile:(NSString *)userID withData:(NSDictionary *)profileData;
+
+// Measurement History
+- (NSArray<NSDictionary *> *)getMeasurementHistoryForUser:(NSString *)userID 
+                                                    limit:(NSInteger)limit;
+- (NSArray<NSDictionary *> *)getMeasurementsForSession:(NSString *)sessionID;
+- (BOOL)saveMeasurements:(NSArray<NSDictionary *> *)measurements 
+              forSession:(NSString *)sessionID;
+
+// Configuration Management
+- (NSString *)getConfigurationValue:(NSString *)key defaultValue:(NSString *)defaultValue;
+- (BOOL)setConfigurationValue:(NSString *)value forKey:(NSString *)key;
+- (NSDictionary *)getAllConfiguration;
+
+@end
+```
+
+#### 10.3.2 Database Manager Implementation
+```objective-c
+@implementation AHIBSDatabaseManager {
+    sqlite3 *_database;
+    NSString *_databasePath;
+}
+
++ (instancetype)sharedManager {
+    static AHIBSDatabaseManager *sharedInstance = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        sharedInstance = [[self alloc] init];
+    });
+    return sharedInstance;
+}
+
+- (instancetype)init {
+    self = [super init];
+    if (self) {
+        [self initializeDatabase];
+    }
+    return self;
+}
+
+- (void)initializeDatabase {
+    NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, 
+                                                        NSUserDomainMask, YES);
+    NSString *documentsDirectory = [paths objectAtIndex:0];
+    _databasePath = [documentsDirectory stringByAppendingPathComponent:@"AHIBodyScan.sqlite"];
+    
+    if (sqlite3_open([_databasePath UTF8String], &_database) != SQLITE_OK) {
+        NSLog(@"Failed to open database: %s", sqlite3_errmsg(_database));
+        return;
+    }
+    
+    [self createTables];
+}
+
+- (void)createTables {
+    // Execute schema creation SQL
+    NSString *createTablesSQL = @"..."; // SQL from above
+    if (sqlite3_exec(_database, [createTablesSQL UTF8String], NULL, NULL, NULL) != SQLITE_OK) {
+        NSLog(@"Failed to create tables: %s", sqlite3_errmsg(_database));
+    }
+}
+
+- (BOOL)saveScanSession:(NSDictionary *)sessionData forUser:(NSString *)userID {
+    const char *sql = "INSERT INTO scan_sessions (session_id, user_id, session_data) VALUES (?, ?, ?)";
+    sqlite3_stmt *statement;
+    
+    if (sqlite3_prepare_v2(_database, sql, -1, &statement, NULL) == SQLITE_OK) {
+        NSString *sessionID = [[NSUUID UUID] UUIDString];
+        NSData *jsonData = [NSJSONSerialization dataWithJSONObject:sessionData 
+                                                           options:0 error:nil];
+        NSString *jsonString = [[NSString alloc] initWithData:jsonData 
+                                                     encoding:NSUTF8StringEncoding];
+        
+        sqlite3_bind_text(statement, 1, [sessionID UTF8String], -1, SQLITE_TRANSIENT);
+        sqlite3_bind_text(statement, 2, [userID UTF8String], -1, SQLITE_TRANSIENT);
+        sqlite3_bind_text(statement, 3, [jsonString UTF8String], -1, SQLITE_TRANSIENT);
+        
+        if (sqlite3_step(statement) == SQLITE_DONE) {
+            sqlite3_finalize(statement);
+            return YES;
+        }
+    }
+    
+    sqlite3_finalize(statement);
+    return NO;
+}
+```
+
+### 10.4 ML Model Embedding Strategy
+
+#### 10.4.1 Bundle Resource Management
+```objective-c
+@interface AHIBSLocalModelManager : NSObject
+
++ (instancetype)sharedManager;
+
+// Model Loading
+- (NSURL *)getModelURL:(NSString *)modelName;
+- (BOOL)loadModel:(NSString *)modelName error:(NSError **)error;
+- (void)preloadAllModels;
+
+// Model Validation
+- (BOOL)validateModelIntegrity:(NSString *)modelName;
+- (NSDictionary *)getModelInfo:(NSString *)modelName;
+
+@end
+
+@implementation AHIBSLocalModelManager
+
+- (NSURL *)getModelURL:(NSString *)modelName {
+    NSBundle *bundle = [NSBundle bundleForClass:[self class]];
+    NSURL *modelURL = [bundle URLForResource:modelName withExtension:@"mlmodel"];
+    
+    if (!modelURL) {
+        // Try .mlmodelc (compiled model)
+        modelURL = [bundle URLForResource:modelName withExtension:@"mlmodelc"];
+    }
+    
+    return modelURL;
+}
+
+- (BOOL)loadModel:(NSString *)modelName error:(NSError **)error {
+    NSURL *modelURL = [self getModelURL:modelName];
+    
+    if (!modelURL) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"AHIBodyScanModelError" 
+                                         code:404 
+                                     userInfo:@{NSLocalizedDescriptionKey: 
+                                               [NSString stringWithFormat:@"Model %@ not found in bundle", modelName]}];
+        }
+        return NO;
+    }
+    
+    // Validate model file integrity
+    if (![self validateModelIntegrity:modelName]) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"AHIBodyScanModelError" 
+                                         code:400 
+                                     userInfo:@{NSLocalizedDescriptionKey: 
+                                               [NSString stringWithFormat:@"Model %@ failed integrity check", modelName]}];
+        }
+        return NO;
+    }
+    
+    return YES;
+}
+
+- (void)preloadAllModels {
+    NSArray *modelNames = @[
+        @"MYQJointModel",
+        @"MyqSegmentationModel", 
+        @"MYQClassificationModelV3f",
+        @"MYQClassificationModelV3m",
+        @"MYQClassificationTBFIM1"
+    ];
+    
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+        for (NSString *modelName in modelNames) {
+            NSError *error;
+            if (![self loadModel:modelName error:&error]) {
+                NSLog(@"Failed to preload model %@: %@", modelName, error.localizedDescription);
+            }
+        }
+    });
+}
+```
+
+#### 10.4.2 Model Compression and Optimization
+```objective-c
+// Model compression utilities
+@interface AHIBSModelCompressor : NSObject
+
++ (BOOL)compressModel:(NSURL *)modelURL outputURL:(NSURL *)outputURL;
++ (NSData *)decompressModelData:(NSData *)compressedData;
++ (BOOL)validateModelChecksum:(NSURL *)modelURL expectedChecksum:(NSString *)checksum;
+
+@end
+
+@implementation AHIBSModelCompressor
+
++ (BOOL)compressModel:(NSURL *)modelURL outputURL:(NSURL *)outputURL {
+    NSData *modelData = [NSData dataWithContentsOfURL:modelURL];
+    if (!modelData) return NO;
+    
+    NSError *error;
+    NSData *compressedData = [modelData compressedDataUsingAlgorithm:NSDataCompressionAlgorithmLZFSE 
+                                                               error:&error];
+    if (error) {
+        NSLog(@"Compression error: %@", error.localizedDescription);
+        return NO;
+    }
+    
+    return [compressedData writeToURL:outputURL atomically:YES];
+}
+
++ (NSData *)decompressModelData:(NSData *)compressedData {
+    NSError *error;
+    NSData *decompressedData = [compressedData decompressedDataUsingAlgorithm:NSDataCompressionAlgorithmLZFSE 
+                                                                        error:&error];
+    if (error) {
+        NSLog(@"Decompression error: %@", error.localizedDescription);
+        return nil;
+    }
+    
+    return decompressedData;
+}
+```
+
+### 10.5 Migration Implementation Timeline
+
+#### 10.5.1 Phase 1: Database Foundation (Weeks 1-2)
+**Week 1:**
+- [ ] Design and implement SQLite schema
+- [ ] Create database manager class
+- [ ] Implement basic CRUD operations
+- [ ] Create data migration utilities
+
+**Week 2:**
+- [ ] Implement Core Data alternative (optional)
+- [ ] Add database indexing for performance
+- [ ] Create unit tests for data layer
+- [ ] Implement data validation and constraints
+
+#### 10.5.2 Phase 2: Model Embedding (Weeks 3-4)
+**Week 3:**
+- [ ] Embed all ML models in app bundle
+- [ ] Implement local model loading
+- [ ] Create model compression utilities
+- [ ] Add model integrity validation
+
+**Week 4:**
+- [ ] Optimize app bundle size
+- [ ] Implement lazy model loading
+- [ ] Add model caching and memory management
+- [ ] Performance testing and optimization
+
+#### 10.5.3 Phase 3: Configuration Migration (Weeks 5-6)
+**Week 5:**
+- [ ] Create local configuration system
+- [ ] Migrate feature flags to local storage
+- [ ] Implement configuration override mechanism
+- [ ] Add configuration validation
+
+**Week 6:**
+- [ ] Remove all network configuration calls
+- [ ] Implement offline license validation
+- [ ] Add configuration management UI (if needed)
+- [ ] Complete integration testing
+
+#### 10.5.4 Phase 4: Testing and Validation (Weeks 7-8)
+**Week 7:**
+- [ ] Comprehensive integration testing
+- [ ] Performance benchmarking
+- [ ] Memory usage optimization
+- [ ] Device compatibility testing
+
+**Week 8:**
+- [ ] User acceptance testing
+- [ ] Documentation updates
+- [ ] Deployment preparation
+- [ ] Final security review
+
+## 11. MACHINE LEARNING MODEL INTEGRATION
+
+### 11.1 ML Model Architecture Overview
+
+#### 11.1.1 Complete Model Inventory
+**CoreML Models (5 primary models):**
+1. **MYQJointModel.ml** (~29MB)
+   - Purpose: 14-point pose estimation
+   - Input: 3×368×368 RGB + 1×368×368 center map
+   - Output: Joint coordinates with confidence scores
+   - Architecture: Custom CNN with gaussian heatmap regression
+
+2. **MyqSegmentationModel.ml** (~8MB)
+   - Purpose: Person silhouette extraction
+   - Input: 3×256×256 RGB image
+   - Output: Binary segmentation mask
+   - Architecture: DeepLab v3+ variant
+
+3. **MYQClassificationModelV3f.ml** (~4MB)
+   - Purpose: Female body measurement classification
+   - Input: 126-dimensional feature vector
+   - Output: Body composition metrics
+   - Architecture: Multi-layer perceptron with gender specialization
+
+4. **MYQClassificationModelV3m.ml** (~4MB)
+   - Purpose: Male body measurement classification
+   - Input: 126-dimensional feature vector
+   - Output: Body composition metrics
+   - Architecture: Multi-layer perceptron with gender specialization
+
+5. **MYQClassificationTBFIM1.ml** (~3MB)
+   - Purpose: Total Body Fat Index Mass calculation
+   - Input: Height, weight, image features
+   - Output: Advanced body composition metrics
+   - Architecture: Support Vector Regression ensemble
+
+**SVR Models (48 specialized models):**
+- **Measurement Models:** chest, waist, hip, thigh, inseam (×2 genders ×3 versions = 30 models)
+- **Composition Models:** fat%, weight prediction, gynoid/android fat (×2 genders ×3 versions = 18 models)
+- **Format:** Cereal serialized C++ objects
+- **Size:** 100KB - 2MB each
+- **Total Size:** ~45MB for all SVR models
+
+#### 11.1.2 Model Version Management
+```objective-c
+typedef NS_ENUM(NSInteger, AHIBSModelVersion) {
+    AHIBSModelVersionV1 = 1,
+    AHIBSModelVersionV2 = 2,
+    AHIBSModelVersionV3 = 3,
+    AHIBSModelVersionV3_1 = 31
+};
+
+typedef NS_ENUM(NSInteger, AHIBSGenderModel) {
+    AHIBSGenderModelMale,
+    AHIBSGenderModelFemale,
+    AHIBSGenderModelUniversal
+};
+
+@interface AHIBSModelConfiguration : NSObject
+@property (nonatomic, assign) AHIBSModelVersion version;
+@property (nonatomic, assign) AHIBSGenderModel gender;
+@property (nonatomic, strong) NSString *modelName;
+@property (nonatomic, strong) NSString *filePath;
+@property (nonatomic, assign) NSUInteger sizeBytes;
+@property (nonatomic, strong) NSString *checksum;
+@end
+```
+
+### 11.2 Performance Optimization Strategies
+
+#### 11.2.1 Model Loading Optimization
+```objective-c
+@interface AHIBSModelCache : NSObject
+
++ (instancetype)sharedCache;
+
+// Lazy loading with caching
+- (MLModel *)loadCoreMLModel:(NSString *)modelName error:(NSError **)error;
+- (void)preloadCriticalModels;
+- (void)clearModelCache;
+
+// Memory management
+- (void)setMaxCacheSize:(NSUInteger)maxSizeBytes;
+- (NSUInteger)currentCacheSize;
+- (void)evictLeastRecentlyUsedModels;
+
+@end
+
+@implementation AHIBSModelCache {
+    NSMutableDictionary<NSString *, MLModel *> *_modelCache;
+    NSMutableDictionary<NSString *, NSDate *> *_lastAccessTimes;
+    NSUInteger _maxCacheSize;
+    NSUInteger _currentCacheSize;
+}
+
++ (instancetype)sharedCache {
+    static AHIBSModelCache *sharedInstance = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        sharedInstance = [[self alloc] init];
+    });
+    return sharedInstance;
+}
+
+- (instancetype)init {
+    self = [super init];
+    if (self) {
+        _modelCache = [NSMutableDictionary dictionary];
+        _lastAccessTimes = [NSMutableDictionary dictionary];
+        _maxCacheSize = 100 * 1024 * 1024; // 100MB default cache size
+        _currentCacheSize = 0;
+    }
+    return self;
+}
+
+- (MLModel *)loadCoreMLModel:(NSString *)modelName error:(NSError **)error {
+    // Check cache first
+    MLModel *cachedModel = _modelCache[modelName];
+    if (cachedModel) {
+        _lastAccessTimes[modelName] = [NSDate date];
+        return cachedModel;
+    }
+    
+    // Load from bundle
+    NSURL *modelURL = [[AHIBSLocalModelManager sharedManager] getModelURL:modelName];
+    if (!modelURL) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"AHIBSModelCache" 
+                                         code:404 
+                                     userInfo:@{NSLocalizedDescriptionKey: 
+                                               [NSString stringWithFormat:@"Model %@ not found", modelName]}];
+        }
+        return nil;
+    }
+    
+    MLModel *model = [MLModel modelWithContentsOfURL:modelURL error:error];
+    if (model) {
+        // Cache the model
+        [self cacheModel:model withName:modelName];
+    }
+    
+    return model;
+}
+
+- (void)cacheModel:(MLModel *)model withName:(NSString *)modelName {
+    // Estimate model size (simplified)
+    NSUInteger modelSize = 10 * 1024 * 1024; // 10MB estimate
+    
+    // Evict models if necessary
+    while (_currentCacheSize + modelSize > _maxCacheSize) {
+        [self evictLeastRecentlyUsedModels];
+    }
+    
+    _modelCache[modelName] = model;
+    _lastAccessTimes[modelName] = [NSDate date];
+    _currentCacheSize += modelSize;
+}
+```
+
+#### 11.2.2 Inference Pipeline Optimization
+```objective-c
+@interface AHIBSMLPipeline : NSObject
+
+// Pipeline stages
+- (void)processImageAsync:(UIImage *)image 
+               completion:(void (^)(NSDictionary *results, NSError *error))completion;
+
+// Individual processing stages
+- (void)detectJoints:(UIImage *)image 
+          completion:(void (^)(NSDictionary *joints, NSError *error))completion;
+- (void)segmentPerson:(UIImage *)image 
+           completion:(void (^)(UIImage *mask, NSError *error))completion;
+- (void)classifyMeasurements:(NSDictionary *)features 
+                  completion:(void (^)(NSDictionary *measurements, NSError *error))completion;
+
+@end
+
+@implementation AHIBSMLPipeline
+
+- (void)processImageAsync:(UIImage *)image 
+               completion:(void (^)(NSDictionary *results, NSError *error))completion {
+    
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^{
+        NSMutableDictionary *results = [NSMutableDictionary dictionary];
+        
+        // Stage 1: Joint Detection (parallel with segmentation)
+        dispatch_group_t group = dispatch_group_create();
+        __block NSDictionary *joints = nil;
+        __block UIImage *segmentationMask = nil;
+        __block NSError *jointError = nil;
+        __block NSError *segmentationError = nil;
+        
+        dispatch_group_enter(group);
+        [self detectJoints:image completion:^(NSDictionary *detectedJoints, NSError *error) {
+            joints = detectedJoints;
+            jointError = error;
+            dispatch_group_leave(group);
+        }];
+        
+        dispatch_group_enter(group);
+        [self segmentPerson:image completion:^(UIImage *mask, NSError *error) {
+            segmentationMask = mask;
+            segmentationError = error;
+            dispatch_group_leave(group);
+        }];
+        
+        // Wait for parallel processing to complete
+        dispatch_group_wait(group, DISPATCH_TIME_FOREVER);
+        
+        if (jointError || segmentationError) {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                completion(nil, jointError ?: segmentationError);
+            });
+            return;
+        }
+        
+        results[@"joints"] = joints;
+        results[@"segmentation"] = segmentationMask;
+        
+        // Stage 3: Feature extraction and classification
+        NSDictionary *features = [self extractFeatures:image joints:joints mask:segmentationMask];
+        
+        [self classifyMeasurements:features completion:^(NSDictionary *measurements, NSError *error) {
+            if (error) {
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    completion(nil, error);
+                });
+                return;
+            }
+            
+            results[@"measurements"] = measurements;
+            
+            dispatch_async(dispatch_get_main_queue(), ^{
+                completion([results copy], nil);
+            });
+        }];
+    });
+}
+```
+
+### 11.3 Model Accuracy and Validation
+
+#### 11.3.1 Accuracy Benchmarking Framework
+```objective-c
+@interface AHIBSAccuracyValidator : NSObject
+
+// Validation methods
+- (void)validateJointDetectionAccuracy:(NSArray<UIImage *> *)testImages 
+                        groundTruthData:(NSArray<NSDictionary *> *)groundTruth
+                             completion:(void (^)(NSDictionary *metrics))completion;
+
+- (void)validateMeasurementAccuracy:(NSArray<NSDictionary *> *)testCases
+                         completion:(void (^)(NSDictionary *metrics))completion;
+
+// Metrics calculation
+- (float)calculateMeanAbsoluteError:(NSArray<NSNumber *> *)predicted 
+                         groundTruth:(NSArray<NSNumber *> *)actual;
+- (float)calculateRootMeanSquaredError:(NSArray<NSNumber *> *)predicted 
+                           groundTruth:(NSArray<NSNumber *> *)actual;
+
+@end
+```
+
+#### 11.3.2 Performance Monitoring
+```objective-c
+@interface AHIBSPerformanceMonitor : NSObject
+
++ (instancetype)sharedMonitor;
+
+// Performance tracking
+- (void)startTimingForOperation:(NSString *)operationName;
+- (void)endTimingForOperation:(NSString *)operationName;
+- (NSDictionary *)getPerformanceMetrics;
+
+// Memory monitoring
+- (NSUInteger)getCurrentMemoryUsage;
+- (NSUInteger)getPeakMemoryUsage;
+- (void)resetMemoryTracking;
+
+@end
+
+@implementation AHIBSPerformanceMonitor {
+    NSMutableDictionary<NSString *, NSDate *> *_startTimes;
+    NSMutableDictionary<NSString *, NSNumber *> *_operationDurations;
+    NSUInteger _peakMemoryUsage;
+}
+
+- (void)startTimingForOperation:(NSString *)operationName {
+    _startTimes[operationName] = [NSDate date];
+}
+
+- (void)endTimingForOperation:(NSString *)operationName {
+    NSDate *startTime = _startTimes[operationName];
+    if (startTime) {
+        NSTimeInterval duration = [[NSDate date] timeIntervalSinceDate:startTime];
+        _operationDurations[operationName] = @(duration * 1000); // Convert to milliseconds
+        [_startTimes removeObjectForKey:operationName];
+    }
+}
+
+- (NSDictionary *)getPerformanceMetrics {
+    return @{
+        @"operation_durations": [_operationDurations copy],
+        @"peak_memory_mb": @(_peakMemoryUsage / (1024 * 1024)),
+        @"current_memory_mb": @([self getCurrentMemoryUsage] / (1024 * 1024))
+    };
+}
+```
+
+## 12. INTEGRATION AND DEPLOYMENT GUIDE
+
+### 12.1 Host Application Integration
+
+#### 12.1.1 SDK Integration Patterns
+```objective-c
+// Basic SDK Integration
+@interface HostAppViewController : UIViewController <AHIBSBodyScanDelegate>
+
+@property (nonatomic, strong) AHIBSBodyScanManager *bodyScanManager;
+
+@end
+
+@implementation HostAppViewController
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    
+    // Initialize SDK
+    AHIBSConfiguration *config = [[AHIBSConfiguration alloc] init];
+    config.useAhiJointMl = YES;
+    config.useAverage = YES;
+    config.enableDebugMode = NO;
+    
+    self.bodyScanManager = [[AHIBSBodyScanManager alloc] initWithConfiguration:config];
+    self.bodyScanManager.delegate = self;
+}
+
+- (void)startBodyScan {
+    // Validate user input
+    if (![self validateUserInputs]) {
+        return;
+    }
+    
+    // Start scan session
+    AHIBSUserProfile *userProfile = [[AHIBSUserProfile alloc] init];
+    userProfile.heightCm = self.heightTextField.text.floatValue;
+    userProfile.weightKg = self.weightTextField.text.floatValue;
+    userProfile.gender = self.genderSegmentedControl.selectedSegmentIndex == 0 ? @"male" : @"female";
+    
+    [self.bodyScanManager startScanWithUserProfile:userProfile];
+}
+
+// Delegate methods
+- (void)bodyScanManager:(AHIBSBodyScanManager *)manager 
+        didUpdatePhase:(AHIBSUIPhase)phase {
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [self updateUIForPhase:phase];
+    });
+}
+
+- (void)bodyScanManager:(AHIBSBodyScanManager *)manager 
+     didCompleteWithResults:(NSDictionary *)results {
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [self presentResults:results];
+    });
+}
+
+- (void)bodyScanManager:(AHIBSBodyScanManager *)manager 
+       didFailWithError:(NSError *)error {
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [self presentError:error];
+    });
+}
+
+@end
+```
+
+#### 12.1.2 Customization Options
+```objective-c
+@interface AHIBSConfiguration : NSObject
+
+// Core functionality
+@property (nonatomic, assign) BOOL useAhiJointMl;
+@property (nonatomic, assign) BOOL useAverage;
+@property (nonatomic, assign) BOOL enableDebugMode;
+@property (nonatomic, assign) float accuracyThreshold;
+
+// UI customization
+@property (nonatomic, strong) UIColor *primaryColor;
+@property (nonatomic, strong) UIColor *secondaryColor;
+@property (nonatomic, strong) UIFont *primaryFont;
+@property (nonatomic, assign) BOOL showSkeletonOverlay;
+
+// Camera settings
+@property (nonatomic, assign) AVCaptureSessionPreset cameraPreset;
+@property (nonatomic, assign) BOOL enableDepthCapture;
+@property (nonatomic, assign) AVCaptureDevicePosition preferredCameraPosition;
+
+// Processing options
+@property (nonatomic, assign) NSTimeInterval processingTimeout;
+@property (nonatomic, assign) NSInteger maxRetryAttempts;
+@property (nonatomic, assign) BOOL enableBackgroundProcessing;
+
+@end
+```
+
+### 12.2 CocoaPods Configuration and Dependency Management
+
+#### 12.2.1 Podspec Configuration
+```ruby
+# AHIBodyScan.podspec
+Pod::Spec.new do |s|
+  s.name             = 'AHIBodyScan'
+  s.version          = '3.1.0'
+  s.summary          = 'AHI BodyScan SDK for iOS'
+  s.description      = 'Computer vision-based body measurement and composition analysis'
+  s.homepage         = 'https://ahi.tech'
+  s.license          = { :file => 'LICENSE.md' }
+  s.author           = { 'AHI' => 'dev@ahi.tech' }
+  s.source           = { :git => 'https://github.com/ahi-dev/ahi-sdk-bodyscan-ios.git', :tag => s.version.to_s }
+  
+  s.ios.deployment_target = '13.4'
+  s.swift_version = '5.0'
+  
+  # Core framework
+  s.source_files = 'AHIBodyScan/Source/Classes/**/*.{swift,h,hh,m,mm,c}'
+  s.public_header_files = 'AHIBodyScan/Source/Classes/Public/**/*.{h,hh}'
+  s.private_header_files = 'AHIBodyScan/Source/Classes/Private/**/*.{h,hh}'
+  
+  # Resources (embedded ML models)
+  s.resource_bundles = {
+    "AHIBodyScanModels" => ["AHIBodyScan/Resources/Models/*.{mlmodel,mlmodelc}"],
+    "AHIBodyScanAssets" => ["AHIBodyScan/Resources/Assets/*.{png,m4a}"]
+  }
+  
+  # Dependencies
+  s.dependency 'AHICommon', '~> 2.0'
+  s.dependency 'AHIOpenCV', '~> 4.5'
+  
+  # Build settings
+  s.library = 'c++'
+  s.xcconfig = {
+    'CLANG_CXX_LANGUAGE_STANDARD' => 'c++11',
+    'CLANG_CXX_LIBRARY' => 'libc++',
+    'OTHER_LDFLAGS' => '-all_load'
+  }
+  
+  s.frameworks = ['Foundation', 'CoreML', 'Vision', 'AVFoundation', 'CoreMotion']
+  s.static_framework = true
+  
+  # Subspecs for modular integration
+  s.subspec 'Core' do |core|
+    core.source_files = 'AHIBodyScan/Source/Classes/Public/BodyScan.{h,m}'
+    core.dependency 'AHIBodyScan/Common'
+  end
+  
+  s.subspec 'UI' do |ui|
+    ui.source_files = 'PartUI/Source/Classes/**/*.{swift,h,m,c}'
+    ui.dependency 'AHIBodyScan/Core'
+    ui.dependency 'AHIBodyScan/Camera'
+  end
+  
+  s.default_subspecs = ['Core', 'UI']
+end
+```
+
+#### 12.2.2 Host App Podfile Configuration
+```ruby
+# Host app Podfile
+platform :ios, '13.4'
+use_frameworks!
+
+target 'HostApp' do
+  # AHI BodyScan SDK
+  pod 'AHIBodyScan', '~> 3.1'
+  
+  # Optional subspecs for specific functionality
+  # pod 'AHIBodyScan/Core'  # Core functionality only
+  # pod 'AHIBodyScan/UI'    # Include UI components
+  
+  # Additional dependencies as needed
+  pod 'Charts', '~> 4.0'  # For measurement visualization
+  pod 'Alamofire', '~> 5.0'  # For optional cloud sync
+  
+  target 'HostAppTests' do
+    inherit! :search_paths
+    pod 'Quick', '~> 5.0'
+    pod 'Nimble', '~> 10.0'
+  end
+end
+
+post_install do |installer|
+  installer.pods_project.targets.each do |target|
+    target.build_configurations.each do |config|
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.4'
+      
+      # Optimize for size (important with embedded ML models)
+      config.build_settings['GCC_OPTIMIZATION_LEVEL'] = 's'
+      config.build_settings['SWIFT_OPTIMIZATION_LEVEL'] = '-Osize'
+    end
+  end
+end
+```
+
+### 12.3 XCFramework Generation and Distribution
+
+#### 12.3.1 XCFramework Build Script
+```bash
+#!/bin/bash
+# build_xcframework.sh
+
+set -e
+
+FRAMEWORK_NAME="AHIBodyScan"
+BUILD_DIR="./build"
+ARCHIVE_DIR="$BUILD_DIR/archives"
+XCFRAMEWORK_DIR="$BUILD_DIR/xcframework"
+
+# Clean build directory
+rm -rf "$BUILD_DIR"
+mkdir -p "$ARCHIVE_DIR"
+mkdir -p "$XCFRAMEWORK_DIR"
+
+# Build for iOS Device
+xcodebuild archive \
+  -workspace "$FRAMEWORK_NAME.xcworkspace" \
+  -scheme "$FRAMEWORK_NAME" \
+  -configuration Release \
+  -destination "generic/platform=iOS" \
+  -archivePath "$ARCHIVE_DIR/$FRAMEWORK_NAME-iOS.xcarchive" \
+  SKIP_INSTALL=NO \
+  BUILD_LIBRARY_FOR_DISTRIBUTION=YES
+
+# Build for iOS Simulator
+xcodebuild archive \
+  -workspace "$FRAMEWORK_NAME.xcworkspace" \
+  -scheme "$FRAMEWORK_NAME" \
+  -configuration Release \
+  -destination "generic/platform=iOS Simulator" \
+  -archivePath "$ARCHIVE_DIR/$FRAMEWORK_NAME-iOS-Simulator.xcarchive" \
+  SKIP_INSTALL=NO \
+  BUILD_LIBRARY_FOR_DISTRIBUTION=YES
+
+# Create XCFramework
+xcodebuild -create-xcframework \
+  -framework "$ARCHIVE_DIR/$FRAMEWORK_NAME-iOS.xcarchive/Products/Library/Frameworks/$FRAMEWORK_NAME.framework" \
+  -framework "$ARCHIVE_DIR/$FRAMEWORK_NAME-iOS-Simulator.xcarchive/Products/Library/Frameworks/$FRAMEWORK_NAME.framework" \
+  -output "$XCFRAMEWORK_DIR/$FRAMEWORK_NAME.xcframework"
+
+# Create distribution ZIP
+cd "$XCFRAMEWORK_DIR"
+zip -r "$FRAMEWORK_NAME.xcframework.zip" "$FRAMEWORK_NAME.xcframework"
+
+# Generate checksum
+shasum -a 256 "$FRAMEWORK_NAME.xcframework.zip" > "$FRAMEWORK_NAME.xcframework.zip.sha256"
+
+echo "XCFramework created successfully at: $XCFRAMEWORK_DIR/$FRAMEWORK_NAME.xcframework.zip"
+```
+
+#### 12.3.2 Swift Package Manager Support
+```swift
+// Package.swift
+import PackageDescription
+
+let package = Package(
+    name: "AHIBodyScan",
+    platforms: [
+        .iOS(.v13)
+    ],
+    products: [
+        .library(
+            name: "AHIBodyScan",
+            targets: ["AHIBodyScan"]
+        ),
+    ],
+    dependencies: [
+        .package(url: "https://github.com/ahi-dev/ahi-common-ios.git", from: "2.0.0"),
+        .package(url: "https://github.com/ahi-dev/ahi-opencv-ios.git", from: "4.5.0"),
+    ],
+    targets: [
+        .binaryTarget(
+            name: "AHIBodyScan",
+            url: "https://github.com/ahi-dev/ahi-sdk-bodyscan-ios/releases/download/3.1.0/AHIBodyScan.xcframework.zip",
+            checksum: "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890"
+        ),
+        .testTarget(
+            name: "AHIBodyScanTests",
+            dependencies: ["AHIBodyScan"]
+        ),
+    ]
+)
+```
+
+### 12.4 Version Management and Update Strategies
+
+#### 12.4.1 Semantic Versioning Strategy
+```
+Version Format: MAJOR.MINOR.PATCH
+
+MAJOR: Breaking API changes
+- Changes to public interface
+- Removal of deprecated methods
+- Major architecture changes
+
+MINOR: New features, backwards compatible
+- New public methods and properties
+- New subspecs or optional features
+- Performance improvements
+
+PATCH: Bug fixes, backwards compatible
+- Bug fixes and stability improvements
+- Performance optimizations
+- Documentation updates
+
+Examples:
+3.1.0 -> 3.1.1 (bug fixes)
+3.1.1 -> 3.2.0 (new features)
+3.2.0 -> 4.0.0 (breaking changes)
+```
+
+#### 12.4.2 Update and Migration Guide
+```objective-c
+// Migration helper for version updates
+@interface AHIBSMigrationManager : NSObject
+
++ (BOOL)needsMigrationFromVersion:(NSString *)oldVersion 
+                        toVersion:(NSString *)newVersion;
++ (BOOL)performMigrationFromVersion:(NSString *)oldVersion 
+                          toVersion:(NSString *)newVersion 
+                              error:(NSError **)error;
+
+// Database schema migrations
++ (BOOL)migrateDatabaseSchema:(sqlite3 *)database 
+                  fromVersion:(NSInteger)oldVersion 
+                    toVersion:(NSInteger)newVersion;
+
+// Model migrations
++ (BOOL)migrateMLModels:(NSString *)oldVersion 
+              toVersion:(NSString *)newVersion;
+
+@end
+```
+
+## 13. TESTING AND VALIDATION FRAMEWORK
+
+### 13.1 Comprehensive Testing Strategy
+
+#### 13.1.1 Testing Architecture Overview
+```
+Testing Framework Structure:
+├── Unit Tests (80%+ coverage target)
+│   ├── Model accuracy tests
+│   ├── Data layer tests
+│   ├── Business logic tests
+│   └── Utility function tests
+├── Integration Tests
+│   ├── End-to-end workflow tests
+│   ├── Multi-module interaction tests
+│   └── Performance integration tests
+├── UI Tests
+│   ├── User workflow automation
+│   ├── Error handling validation
+│   └── Accessibility testing
+└── Performance Tests
+    ├── Memory usage validation
+    ├── Processing speed benchmarks
+    └── Device compatibility tests
+```
+
+#### 13.1.2 Unit Testing Framework Implementation
+```objective-c
+// Kiwi test specifications
+SPEC_BEGIN(AHIBSBodyScanProcessorSpec)
+
+describe(@"AHIBSBodyScanProcessor", ^{
+    
+    __block AHIBSBodyScanProcessor *processor;
+    __block id mockDelegate;
+    
+    beforeEach(^{
+        processor = [[AHIBSBodyScanProcessor alloc] init];
+        mockDelegate = [KWMock mockForProtocol:@protocol(AHIBSBodyScanProcessorDelegate)];
+        processor.delegate = mockDelegate;
+    });
+    
+    context(@"when processing valid user inputs", ^{
+        it(@"should validate height within acceptable range", ^{
+            BOOL isValid = [processor validateHeight:175.0];
+            [[theValue(isValid) should] beTrue];
+        });
+        
+        it(@"should reject height outside acceptable range", ^{
+            BOOL isValid = [processor validateHeight:300.0];
+            [[theValue(isValid) should] beFalse];
+        });
+        
+        it(@"should validate weight within acceptable range", ^{
+            BOOL isValid = [processor validateWeight:70.0];
+            [[theValue(isValid) should] beTrue];
+        });
+    });
+    
+    context(@"when processing capture data", ^{
+        it(@"should process valid front capture successfully", ^{
+            UIImage *testImage = [self createTestImage];
+            AHIBSCapture *capture = [self createMockCapture:testImage];
+            
+            [[mockDelegate should] receive:@selector(processor:didCompleteProcessing:) 
+                             withArguments:processor, any()];
+            
+            [processor processFrontCapture:capture];
+        });
+        
+        it(@"should handle invalid capture data gracefully", ^{
+            AHIBSCapture *invalidCapture = nil;
+            
+            [[mockDelegate should] receive:@selector(processor:didFailWithError:) 
+                             withArguments:processor, any()];
+            
+            [processor processFrontCapture:invalidCapture];
+        });
+    });
+    
+    context(@"when calculating measurements", ^{
+        it(@"should return measurements within expected accuracy range", ^{
+            NSDictionary *testFeatures = [self createTestFeatures];
+            NSDictionary *measurements = [processor calculateMeasurements:testFeatures];
+            
+            NSNumber *chestMeasurement = measurements[@"cm_raw_chest"];
+            [[chestMeasurement should] beGreaterThan:@(70.0)];
+            [[chestMeasurement should] beLessThan:@(130.0)];
+        });
+    });
+});
+
+SPEC_END
+```
+
+#### 13.1.3 ML Model Accuracy Testing
+```objective-c
+@interface AHIBSModelAccuracyTests : XCTestCase
+
+@property (nonatomic, strong) AHIBSMLPipeline *mlPipeline;
+@property (nonatomic, strong) NSArray *testDataset;
+
+@end
+
+@implementation AHIBSModelAccuracyTests
+
+- (void)setUp {
+    [super setUp];
+    self.mlPipeline = [[AHIBSMLPipeline alloc] init];
+    self.testDataset = [self loadTestDataset];
+}
+
+- (void)testJointDetectionAccuracy {
+    NSMutableArray *errors = [NSMutableArray array];
+    
+    for (NSDictionary *testCase in self.testDataset) {
+        UIImage *testImage = testCase[@"image"];
+        NSDictionary *groundTruth = testCase[@"ground_truth_joints"];
+        
+        XCTestExpectation *expectation = [self expectationWithDescription:@"Joint detection"];
+        
+        [self.mlPipeline detectJoints:testImage completion:^(NSDictionary *detectedJoints, NSError *error) {
+            if (!error) {
+                float meanError = [self calculateJointDetectionError:detectedJoints 
+                                                         groundTruth:groundTruth];
+                [errors addObject:@(meanError)];
+            }
+            [expectation fulfill];
+        }];
+        
+        [self waitForExpectations:@[expectation] timeout:10.0];
+    }
+    
+    // Calculate overall accuracy metrics
+    float averageError = [self calculateMean:errors];
+    float maxAcceptableError = 5.0; // 5 pixels
+    
+    XCTAssertLessThan(averageError, maxAcceptableError, 
+                     @"Joint detection accuracy below threshold: %.2f > %.2f", 
+                     averageError, maxAcceptableError);
+}
+
+- (void)testMeasurementAccuracy {
+    NSMutableDictionary *measurementErrors = [NSMutableDictionary dictionary];
+    
+    for (NSDictionary *testCase in self.testDataset) {
+        NSDictionary *inputFeatures = testCase[@"features"];
+        NSDictionary *groundTruthMeasurements = testCase[@"ground_truth_measurements"];
+        
+        XCTestExpectation *expectation = [self expectationWithDescription:@"Measurement calculation"];
+        
+        [self.mlPipeline classifyMeasurements:inputFeatures completion:^(NSDictionary *measurements, NSError *error) {
+            if (!error) {
+                for (NSString *measurementType in groundTruthMeasurements) {
+                    float predicted = [measurements[measurementType] floatValue];
+                    float actual = [groundTruthMeasurements[measurementType] floatValue];
+                    float error = fabsf(predicted - actual);
+                    
+                    if (!measurementErrors[measurementType]) {
+                        measurementErrors[measurementType] = [NSMutableArray array];
+                    }
+                    [measurementErrors[measurementType] addObject:@(error)];
+                }
+            }
+            [expectation fulfill];
+        }];
+        
+        [self waitForExpectations:@[expectation] timeout:10.0];
+    }
+    
+    // Validate accuracy for each measurement type
+    NSDictionary *accuracyThresholds = @{
+        @"cm_raw_chest": @(3.0),    // ±3cm
+        @"cm_raw_waist": @(3.0),    // ±3cm
+        @"cm_raw_hips": @(3.0),     // ±3cm
+        @"percent_raw_body_fat": @(5.0)  // ±5%
+    };
+    
+    for (NSString *measurementType in accuracyThresholds) {
+        NSArray *errors = measurementErrors[measurementType];
+        float averageError = [self calculateMean:errors];
+        float threshold = [accuracyThresholds[measurementType] floatValue];
+        
+        XCTAssertLessThan(averageError, threshold,
+                         @"%@ accuracy below threshold: %.2f > %.2f",
+                         measurementType, averageError, threshold);
+    }
+}
+```
+
+### 13.2 Performance Testing and Benchmarking
+
+#### 13.2.1 Performance Benchmark Tests
+```objective-c
+@interface AHIBSPerformanceTests : XCTestCase
+
+@property (nonatomic, strong) AHIBSPerformanceMonitor *performanceMonitor;
+
+@end
+
+@implementation AHIBSPerformanceTests
+
+- (void)setUp {
+    [super setUp];
+    self.performanceMonitor = [AHIBSPerformanceMonitor sharedMonitor];
+}
+
+- (void)testEndToEndProcessingPerformance {
+    UIImage *testImage = [self createStandardTestImage];
+    
+    XCTestExpectation *expectation = [self expectationWithDescription:@"End-to-end processing"];
+    
+    [self.performanceMonitor startTimingForOperation:@"end_to_end_processing"];
+    
+    [[AHIBSMLPipeline sharedPipeline] processImageAsync:testImage completion:^(NSDictionary *results, NSError *error) {
+        [self.performanceMonitor endTimingForOperation:@"end_to_end_processing"];
+        
+        XCTAssertNil(error, @"Processing should complete without error");
+        XCTAssertNotNil(results, @"Results should not be nil");
+        
+        NSDictionary *metrics = [self.performanceMonitor getPerformanceMetrics];
+        NSNumber *processingTime = metrics[@"operation_durations"][@"end_to_end_processing"];
+        
+        // Performance requirements: < 1000ms (1 second)
+        XCTAssertLessThan(processingTime.floatValue, 1000.0,
+                         @"End-to-end processing too slow: %.2fms", processingTime.floatValue);
+        
+        [expectation fulfill];
+    }];
+    
+    [self waitForExpectations:@[expectation] timeout:15.0];
+}
+
+- (void)testMemoryUsageDuringProcessing {
+    [self.performanceMonitor resetMemoryTracking];
+    
+    NSUInteger initialMemory = [self.performanceMonitor getCurrentMemoryUsage];
+    
+    // Process multiple images to test memory management
+    for (int i = 0; i < 10; i++) {
+        UIImage *testImage = [self createRandomTestImage];
+        
+        XCTestExpectation *expectation = [self expectationWithDescription:
+                                         [NSString stringWithFormat:@"Processing iteration %d", i]];
+        
+        [[AHIBSMLPipeline sharedPipeline] processImageAsync:testImage completion:^(NSDictionary *results, NSError *error) {
+            [expectation fulfill];
+        }];
+        
+        [self waitForExpectations:@[expectation] timeout:10.0];
+    }
+    
+    NSUInteger peakMemory = [self.performanceMonitor getPeakMemoryUsage];
+    NSUInteger memoryIncrease = peakMemory - initialMemory;
+    
+    // Memory increase should be less than 200MB during processing
+    NSUInteger maxAcceptableIncrease = 200 * 1024 * 1024; // 200MB
+    XCTAssertLessThan(memoryIncrease, maxAcceptableIncrease,
+                     @"Memory usage too high: %lu MB increase", 
+                     memoryIncrease / (1024 * 1024));
+}
+
+- (void)testModelLoadingPerformance {
+    NSArray *modelNames = @[@"MYQJointModel", @"MyqSegmentationModel", 
+                           @"MYQClassificationModelV3f", @"MYQClassificationModelV3m"];
+    
+    for (NSString *modelName in modelNames) {
+        [self measureBlock:^{
+            NSError *error;
+            MLModel *model = [[AHIBSModelCache sharedCache] loadCoreMLModel:modelName error:&error];
+            XCTAssertNotNil(model, @"Model %@ should load successfully", modelName);
+            XCTAssertNil(error, @"Model loading should not produce errors");
+        }];
+    }
+}
+```
+
+#### 13.2.2 Device Compatibility Testing
+```objective-c
+@interface AHIBSCompatibilityTests : XCTestCase
+@end
+
+@implementation AHIBSCompatibilityTests
+
+- (void)testMinimumHardwareRequirements {
+    // Test on minimum supported hardware (iPhone 6s equivalent)
+    NSDictionary *deviceInfo = [self getCurrentDeviceInfo];
+    
+    NSString *deviceModel = deviceInfo[@"model"];
+    NSNumber *totalMemory = deviceInfo[@"total_memory"];
+    NSString *iOSVersion = deviceInfo[@"ios_version"];
+    
+    // Minimum requirements validation
+    XCTAssertTrue([self isDevice:deviceModel newerThanOrEqualTo:@"iPhone6s"],
+                 @"Device %@ below minimum requirements", deviceModel);
+    
+    XCTAssertGreaterThanOrEqual(totalMemory.unsignedIntegerValue, 2ULL * 1024 * 1024 * 1024,
+                               @"Insufficient memory: %@ GB", @(totalMemory.unsignedIntegerValue / (1024.0 * 1024 * 1024)));
+    
+    XCTAssertTrue([self isiOSVersion:iOSVersion newerThanOrEqualTo:@"13.4"],
+                 @"iOS version %@ below minimum requirement", iOSVersion);
+}
+
+- (void)testNeuralEngineAvailability {
+    // Test Neural Engine support for optimal performance
+    BOOL hasNeuralEngine = [self deviceHasNeuralEngine];
+    
+    if (hasNeuralEngine) {
+        // Test Neural Engine utilization
+        XCTestExpectation *expectation = [self expectationWithDescription:@"Neural Engine test"];
+        
+        UIImage *testImage = [self createStandardTestImage];
+        
+        CFAbsoluteTime startTime = CFAbsoluteTimeGetCurrent();
+        
+        [[AHIBSMLPipeline sharedPipeline] detectJoints:testImage completion:^(NSDictionary *joints, NSError *error) {
+            CFAbsoluteTime processingTime = CFAbsoluteTimeGetCurrent() - startTime;
+            
+            // With Neural Engine, joint detection should be < 200ms
+            XCTAssertLessThan(processingTime, 0.2,
+                             @"Neural Engine optimization not working: %.3fs", processingTime);
+            
+            [expectation fulfill];
+        }];
+        
+        [self waitForExpectations:@[expectation] timeout:5.0];
+    } else {
+        NSLog(@"Neural Engine not available on this device - using CPU/GPU fallback");
+    }
+}
+```
+
+### 13.3 Automated Testing Pipeline
+
+#### 13.3.1 Continuous Integration Configuration
+```yaml
+# .github/workflows/ci.yml
+name: AHI BodyScan CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  unit-tests:
+    runs-on: macos-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Xcode
+      uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: '15.0'
+    
+    - name: Install dependencies
+      run: |
+        cd AHIBodyScan/Example
+        pod install
+    
+    - name: Run unit tests
+      run: |
+        cd AHIBodyScan/Example
+        xcodebuild test \
+          -workspace AHIBodyScan.xcworkspace \
+          -scheme AHIBodyScan-Example \
+          -destination 'platform=iOS Simulator,name=iPhone 14' \
+          -enableCodeCoverage YES
+    
+    - name: Upload coverage reports
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./AHIBodyScan/Example/coverage.xml
+
+  performance-tests:
+    runs-on: macos-latest
+    needs: unit-tests
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Run performance benchmarks
+      run: |
+        cd AHIBodyScan/Example
+        xcodebuild test \
+          -workspace AHIBodyScan.xcworkspace \
+          -scheme AHIBodyScan-Example \
+          -destination 'platform=iOS Simulator,name=iPhone 14' \
+          -testPlan PerformanceTestPlan
+    
+    - name: Archive performance results
+      uses: actions/upload-artifact@v3
+      with:
+        name: performance-results
+        path: ./performance-results/
+
+  integration-tests:
+    runs-on: macos-latest
+    needs: unit-tests
+    
+    strategy:
+      matrix:
+        device: ['iPhone 12', 'iPhone 14', 'iPad Air (5th generation)']
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Run integration tests on ${{ matrix.device }}
+      run: |
+        cd AHIBodyScan/Example
+        xcodebuild test \
+          -workspace AHIBodyScan.xcworkspace \
+          -scheme AHIBodyScan-Example \
+          -destination 'platform=iOS Simulator,name=${{ matrix.device }}' \
+          -testPlan IntegrationTestPlan
+```
+
+#### 13.3.2 Quality Gate Configuration
+```yaml
+# quality-gates.yml
+quality_gates:
+  code_coverage:
+    minimum_coverage: 80
+    exclude_patterns:
+      - "*/Tests/*"
+      - "*/Examples/*"
+  
+  performance_requirements:
+    end_to_end_processing: 1000ms
+    joint_detection: 200ms
+    segmentation: 300ms
+    classification: 150ms
+    memory_usage: 200MB
+  
+  accuracy_requirements:
+    joint_detection_error: 5.0px
+    chest_measurement_error: 3.0cm
+    waist_measurement_error: 3.0cm
+    body_fat_error: 5.0%
+  
+  security_checks:
+    - no_hardcoded_secrets
+    - secure_key_management
+    - encryption_validation
+    - authentication_security
+```
+
+## 14. TROUBLESHOOTING AND MAINTENANCE GUIDE
+
+### 14.1 Common Issues and Resolution Procedures
+
+#### 14.1.1 Model Loading Issues
+**Issue:** CoreML models fail to load or compile
+**Symptoms:**
+- App crashes during SDK initialization
+- Error codes in 2000-2100 range
+- "Model not found" or "Compilation failed" errors
+
+**Resolution Steps:**
+```objective-c
+// Diagnostic code for model loading issues
+- (void)diagnoseModelLoadingIssues {
+    AHIBSLocalModelManager *modelManager = [AHIBSLocalModelManager sharedManager];
+    
+    NSArray *requiredModels = @[@"MYQJointModel", @"MyqSegmentationModel", 
+                               @"MYQClassificationModelV3f", @"MYQClassificationModelV3m"];
+    
+    for (NSString *modelName in requiredModels) {
+        NSURL *modelURL = [modelManager getModelURL:modelName];
+        
+        if (!modelURL) {
+            NSLog(@"❌ Model %@ not found in bundle", modelName);
+            continue;
+        }
+        
+        NSLog(@"✅ Model %@ found at: %@", modelName, modelURL.path);
+        
+        // Check file integrity
+        if ([modelManager validateModelIntegrity:modelName]) {
+            NSLog(@"✅ Model %@ integrity check passed", modelName);
+        } else {
+            NSLog(@"❌ Model %@ integrity check failed", modelName);
+        }
+        
+        // Attempt to load model
+        NSError *error;
+        if ([modelManager loadModel:modelName error:&error]) {
+            NSLog(@"✅ Model %@ loaded successfully", modelName);
+        } else {
+            NSLog(@"❌ Model %@ failed to load: %@", modelName, error.localizedDescription);
+        }
+    }
+}
+
+// Model recovery procedure
+- (BOOL)attemptModelRecovery:(NSString *)modelName {
+    NSLog(@"Attempting recovery for model: %@", modelName);
+    
+    // Step 1: Clear model cache
+    [[AHIBSModelCache sharedCache] clearModelCache];
+    
+    // Step 2: Verify bundle integrity
+    NSURL *modelURL = [[AHIBSLocalModelManager sharedManager] getModelURL:modelName];
+    if (!modelURL) {
+        NSLog(@"Model %@ not found in bundle - requires app reinstall", modelName);
+        return NO;
+    }
+    
+    // Step 3: Attempt reload with fallback
+    NSError *error;
+    if (![[AHIBSLocalModelManager sharedManager] loadModel:modelName error:&error]) {
+        NSLog(@"Model %@ reload failed: %@", modelName, error.localizedDescription);
+        
+        // Try loading older version as fallback
+        NSString *fallbackModel = [self getFallbackModelName:modelName];
+        if (fallbackModel) {
+            return [[AHIBSLocalModelManager sharedManager] loadModel:fallbackModel error:nil];
+        }
+        
+        return NO;
+    }
+    
+    return YES;
+}
+```
+
+#### 14.1.2 Camera and Capture Issues
+**Issue:** Camera access denied or capture failures
+**Symptoms:**
+- Black camera preview
+- "Camera access denied" errors
+- Poor image quality or capture failures
+
+**Resolution Steps:**
+```objective-c
+// Camera diagnostics
+- (void)diagnoseCameraIssues {
+    // Check camera permissions
+    AVAuthorizationStatus cameraStatus = [AVCaptureDevice authorizationStatusForMediaType:AVMediaTypeVideo];
+    
+    switch (cameraStatus) {
+        case AVAuthorizationStatusDenied:
+            NSLog(@"❌ Camera access denied by user");
+            [self showCameraPermissionAlert];
+            break;
+        case AVAuthorizationStatusRestricted:
+            NSLog(@"❌ Camera access restricted by parental controls");
+            break;
+        case AVAuthorizationStatusNotDetermined:
+            NSLog(@"⚠️ Camera permission not requested yet");
+            [self requestCameraPermission];
+            break;
+        case AVAuthorizationStatusAuthorized:
+            NSLog(@"✅ Camera access authorized");
+            [self diagnoseCameraHardware];
+            break;
+    }
+}
+
+- (void)diagnoseCameraHardware {
+    AVCaptureDevice *frontCamera = [AVCaptureDevice defaultDeviceWithDeviceType:AVCaptureDeviceTypeBuiltInWideAngleCamera
+                                                                      mediaType:AVMediaTypeVideo
+                                                                       position:AVCaptureDevicePositionFront];
+    
+    if (!frontCamera) {
+        NSLog(@"❌ Front camera not available");
+        return;
+    }
+    
+    NSLog(@"✅ Front camera available: %@", frontCamera.localizedName);
+    
+    // Check camera capabilities
+    if ([frontCamera supportsAVCaptureSessionPreset:AVCaptureSessionPreset1280x720]) {
+        NSLog(@"✅ 720p capture supported");
+    } else {
+        NSLog(@"⚠️ 720p capture not supported - using fallback resolution");
+    }
+    
+    // Check depth camera support
+    if (frontCamera.activeDepthDataFormat) {
+        NSLog(@"✅ Depth camera available");
+    } else {
+        NSLog(@"ℹ️ Depth camera not available (not required)");
+    }
+}
+
+// Camera recovery procedure
+- (void)recoverCameraSession:(AVCaptureSession *)session {
+    if (!session.isRunning) {
+        dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+            [session startRunning];
+            
+            dispatch_async(dispatch_get_main_queue(), ^{
+                if (session.isRunning) {
+                    NSLog(@"✅ Camera session recovered");
+                } else {
+                    NSLog(@"❌ Camera session recovery failed");
+                    [self handleCameraRecoveryFailure];
+                }
+            });
+        });
+    }
+}
+```
+
+#### 14.1.3 Measurement Accuracy Issues
+**Issue:** Inconsistent or inaccurate measurements
+**Symptoms:**
+- Measurements outside expected ranges
+- Large variations between repeated scans
+- Error codes in 2200-2300 range
+
+**Resolution Steps:**
+```objective-c
+// Measurement validation and diagnostics
+- (void)validateMeasurementAccuracy:(NSDictionary *)measurements 
+                        userProfile:(AHIBSUserProfile *)profile {
+    
+    NSMutableArray *validationErrors = [NSMutableArray array];
+    
+    // Validate circumference measurements
+    NSArray *circumferenceMeasurements = @[@"cm_raw_chest", @"cm_raw_waist", @"cm_raw_hips"];
+    
+    for (NSString *measurement in circumferenceMeasurements) {
+        float value = [measurements[measurement] floatValue];
+        
+        if (value < 50.0 || value > 200.0) {
+            [validationErrors addObject:[NSString stringWithFormat:
+                                        @"%@ out of range: %.1f cm", measurement, value]];
+        }
+    }
+    
+    // Validate body fat percentage
+    float bodyFat = [measurements[@"percent_raw_body_fat"] floatValue];
+    if (bodyFat < 3.0 || bodyFat > 50.0) {
+        [validationErrors addObject:[NSString stringWithFormat:
+                                    @"Body fat out of range: %.1f%%", bodyFat]];
+    }
+    
+    // Validate against user profile
+    float predictedWeight = [measurements[@"kg_predicted_weight"] floatValue];
+    float actualWeight = profile.weightKg;
+    float weightDifference = fabsf(predictedWeight - actualWeight);
+    
+    if (weightDifference > 10.0) { // More than 10kg difference
+        [validationErrors addObject:[NSString stringWithFormat:
+                                    @"Weight prediction inconsistent: %.1fkg vs %.1fkg", 
+                                    predictedWeight, actualWeight]];
+    }
+    
+    if (validationErrors.count > 0) {
+        NSLog(@"⚠️ Measurement validation issues:");
+        for (NSString *error in validationErrors) {
+            NSLog(@"  - %@", error);
+        }
+        
+        [self suggestMeasurementImprovements:validationErrors];
+    } else {
+        NSLog(@"✅ Measurements passed validation");
+    }
+}
+
+- (void)suggestMeasurementImprovements:(NSArray *)validationErrors {
+    NSMutableArray *suggestions = [NSMutableArray array];
+    
+    for (NSString *error in validationErrors) {
+        if ([error containsString:@"out of range"]) {
+            [suggestions addObject:@"Ensure proper lighting and camera distance"];
+            [suggestions addObject:@"Check user positioning and pose alignment"];
+        }
+        
+        if ([error containsString:@"inconsistent"]) {
+            [suggestions addObject:@"Verify user input accuracy (height/weight)"];
+            [suggestions addObject:@"Consider recalibrating with multiple scans"];
+        }
+    }
+    
+    // Remove duplicates
+    NSArray *uniqueSuggestions = [[NSSet setWithArray:suggestions] allObjects];
+    
+    NSLog(@"💡 Improvement suggestions:");
+    for (NSString *suggestion in uniqueSuggestions) {
+        NSLog(@"  • %@", suggestion);
+    }
+}
+```
+
+### 14.2 Error Code Reference and Debugging
+
+#### 14.2.1 Comprehensive Error Code Guide
+```objective-c
+// Error code definitions and debugging
+typedef NS_ENUM(NSInteger, AHIBSErrorCode) {
+    // Input Validation Errors (2000-2099)
+    AHIBSErrorCodeInvalidHeight = 2001,
+    AHIBSErrorCodeInvalidWeight = 2002,
+    AHIBSErrorCodeInvalidGender = 2003,
+    AHIBSErrorCodeMissingUserData = 2004,
+    
+    // Resource Management Errors (2100-2199)
+    AHIBSErrorCodeModelNotFound = 2101,
+    AHIBSErrorCodeModelLoadFailed = 2102,
+    AHIBSErrorCodeModelCompilationFailed = 2103,
+    AHIBSErrorCodeInsufficientStorage = 2104,
+    
+    // Camera Errors (2200-2299)
+    AHIBSErrorCodeCameraAccessDenied = 2201,
+    AHIBSErrorCodeCameraNotAvailable = 2202,
+    AHIBSErrorCodeCaptureSessionFailed = 2203,
+    AHIBSErrorCodeImageCaptureFailed = 2204,
+    
+    // Processing Errors (2300-2399)
+    AHIBSErrorCodeJointDetectionFailed = 2301,
+    AHIBSErrorCodeSegmentationFailed = 2302,
+    AHIBSErrorCodeClassificationFailed = 2303,
+    AHIBSErrorCodeProcessingTimeout = 2304,
+    
+    // Measurement Validation Errors (2400-2499)
+    AHIBSErrorCodeMeasurementOutOfRange = 2401,
+    AHIBSErrorCodeInconsistentMeasurements = 2402,
+    AHIBSErrorCodeLowConfidenceScore = 2403,
+    AHIBSErrorCodeInsufficientDataQuality = 2404
+};
+
+@interface AHIBSErrorHandler : NSObject
+
++ (NSString *)getErrorDescription:(NSInteger)errorCode;
++ (NSArray<NSString *> *)getResolutionSteps:(NSInteger)errorCode;
++ (BOOL)isRecoverableError:(NSInteger)errorCode;
++ (void)logError:(NSError *)error withContext:(NSDictionary *)context;
+
+@end
+
+@implementation AHIBSErrorHandler
+
++ (NSString *)getErrorDescription:(NSInteger)errorCode {
+    switch (errorCode) {
+        case AHIBSErrorCodeInvalidHeight:
+            return @"User height is outside valid range (50-255 cm)";
+        case AHIBSErrorCodeInvalidWeight:
+            return @"User weight is outside valid range (16-300 kg)";
+        case AHIBSErrorCodeModelNotFound:
+            return @"Required ML model not found in app bundle";
+        case AHIBSErrorCodeCameraAccessDenied:
+            return @"Camera access denied by user";
+        case AHIBSErrorCodeJointDetectionFailed:
+            return @"Unable to detect required body joints in image";
+        case AHIBSErrorCodeMeasurementOutOfRange:
+            return @"Calculated measurements are outside expected ranges";
+        default:
+            return @"Unknown error occurred";
+    }
+}
+
++ (NSArray<NSString *> *)getResolutionSteps:(NSInteger)errorCode {
+    switch (errorCode) {
+        case AHIBSErrorCodeInvalidHeight:
+        case AHIBSErrorCodeInvalidWeight:
+            return @[@"Verify user input accuracy",
+                    @"Ensure values are within acceptable ranges",
+                    @"Check for input validation bypass attempts"];
+            
+        case AHIBSErrorCodeModelNotFound:
+        case AHIBSErrorCodeModelLoadFailed:
+            return @[@"Verify app bundle integrity",
+                    @"Check available storage space",
+                    @"Restart app to clear model cache",
+                    @"Reinstall app if issue persists"];
+            
+        case AHIBSErrorCodeCameraAccessDenied:
+            return @[@"Request camera permission from user",
+                    @"Guide user to Settings > Privacy > Camera",
+                    @"Explain camera requirement for functionality"];
+            
+        case AHIBSErrorCodeJointDetectionFailed:
+            return @[@"Improve lighting conditions",
+                    @"Ensure user is fully visible in frame",
+                    @"Check for proper body positioning",
+                    @"Remove obstructions or background clutter"];
+            
+        case AHIBSErrorCodeMeasurementOutOfRange:
+            return @[@"Retake scan with better positioning",
+                    @"Verify user input data accuracy",
+                    @"Check for environmental factors (lighting, background)",
+                    @"Consider multiple scans for consistency"];
+            
+        default:
+            return @[@"Restart the scan process",
+                    @"Check device compatibility",
+                    @"Contact support if issue persists"];
+    }
+}
+
++ (void)logError:(NSError *)error withContext:(NSDictionary *)context {
+    NSString *errorDescription = [self getErrorDescription:error.code];
+    NSArray *resolutionSteps = [self getResolutionSteps:error.code];
+    
+    NSLog(@"🚨 AHI BodyScan Error %ld: %@", (long)error.code, errorDescription);
+    NSLog(@"📋 Context: %@", context);
+    NSLog(@"🔧 Resolution steps:");
+    
+    for (NSInteger i = 0; i < resolutionSteps.count; i++) {
+        NSLog(@"  %ld. %@", (long)(i + 1), resolutionSteps[i]);
+    }
+    
+    // Log to crash reporting service if available
+    // [CrashlyticService recordError:error withContext:context];
+}
+```
+
+### 14.3 Performance Optimization and Resource Management
+
+#### 14.3.1 Memory Management Best Practices
+```objective-c
+// Memory management and optimization
+@interface AHIBSResourceManager : NSObject
+
++ (instancetype)sharedManager;
+
+// Memory monitoring
+- (void)startMemoryMonitoring;
+- (void)stopMemoryMonitoring;
+- (NSUInteger)getCurrentMemoryUsage;
+- (NSUInteger)getAvailableMemory;
+
+// Resource cleanup
+- (void)performMemoryCleanup;
+- (void)clearImageCache;
+- (void)clearModelCache;
+
+// Performance optimization
+- (void)optimizeForLowMemoryDevice;
+- (void)preloadCriticalResources;
+
+@end
+
+@implementation AHIBSResourceManager {
+    NSTimer *_memoryMonitorTimer;
+    NSUInteger _memoryWarningThreshold;
+    NSUInteger _peakMemoryUsage;
+}
+
++ (instancetype)sharedManager {
+    static AHIBSResourceManager *sharedInstance = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        sharedInstance = [[self alloc] init];
+    });
+    return sharedInstance;
+}
+
+- (instancetype)init {
+    self = [super init];
+    if (self) {
+        _memoryWarningThreshold = 150 * 1024 * 1024; // 150MB
+        
+        // Register for memory warnings
+        [[NSNotificationCenter defaultCenter] addObserver:self
+                                                 selector:@selector(handleMemoryWarning:)
+                                                     name:UIApplicationDidReceiveMemoryWarningNotification
+                                                   object:nil];
+    }
+    return self;
+}
+
+- (void)handleMemoryWarning:(NSNotification *)notification {
+    NSLog(@"⚠️ Memory warning received - performing cleanup");
+    [self performMemoryCleanup];
+}
+
+- (void)performMemoryCleanup {
+    // Clear non-essential caches
+    [self clearImageCache];
+    
+    // Evict least recently used models
+    [[AHIBSModelCache sharedCache] evictLeastRecentlyUsedModels];
+    
+    // Force garbage collection (if using ARC with manual memory management)
+    // [self forceLowMemoryWarning];
+    
+    NSLog(@"🧹 Memory cleanup completed");
+}
+
+- (NSUInteger)getCurrentMemoryUsage {
+    struct mach_task_basic_info info;
+    mach_msg_type_number_t size = MACH_TASK_BASIC_INFO_COUNT;
+    kern_return_t result = task_info(mach_task_self(), MACH_TASK_BASIC_INFO, 
+                                   (task_info_t)&info, &size);
+    
+    if (result == KERN_SUCCESS) {
+        return info.resident_size;
+    }
+    
+    return 0;
+}
+
+- (void)optimizeForLowMemoryDevice {
+    NSUInteger totalMemory = [NSProcessInfo processInfo].physicalMemory;
+    
+    if (totalMemory < 3ULL * 1024 * 1024 * 1024) { // Less than 3GB
+        NSLog(@"📱 Optimizing for low memory device");
+        
+        // Reduce model cache size
+        [[AHIBSModelCache sharedCache] setMaxCacheSize:50 * 1024 * 1024]; // 50MB
+        
+        // Use more aggressive cleanup
+        _memoryWarningThreshold = 100 * 1024 * 1024; // 100MB
+        
+        // Disable non-essential features
+        // [self disableDebugFeatures];
+    }
+}
+```
+
+#### 14.3.2 Performance Monitoring and Alerts
+```objective-c
+// Performance monitoring system
+@interface AHIBSPerformanceAlert : NSObject
+
++ (void)checkPerformanceThresholds:(NSDictionary *)metrics;
++ (void)logPerformanceIssue:(NSString *)issue withMetrics:(NSDictionary *)metrics;
++ (void)generatePerformanceReport;
+
+@end
+
+@implementation AHIBSPerformanceAlert
+
++ (void)checkPerformanceThresholds:(NSDictionary *)metrics {
+    NSDictionary *thresholds = @{
+        @"end_to_end_processing": @(1000.0),      // 1 second
+        @"joint_detection": @(200.0),             // 200ms
+        @"segmentation": @(300.0),                // 300ms
+        @"classification": @(150.0),              // 150ms
+        @"memory_usage_mb": @(200.0)              // 200MB
+    };
+    
+    NSMutableArray *performanceIssues = [NSMutableArray array];
+    
+    for (NSString *metric in thresholds) {
+        NSNumber *actualValue = metrics[metric];
+        NSNumber *threshold = thresholds[metric];
+        
+        if (actualValue && actualValue.doubleValue > threshold.doubleValue) {
+            NSString *issue = [NSString stringWithFormat:
+                              @"%@ exceeded threshold: %.2f > %.2f", 
+                              metric, actualValue.doubleValue, threshold.doubleValue];
+            [performanceIssues addObject:issue];
+        }
+    }
+    
+    if (performanceIssues.count > 0) {
+        [self logPerformanceIssue:@"Performance thresholds exceeded" withMetrics:metrics];
+        
+        for (NSString *issue in performanceIssues) {
+            NSLog(@"⚠️ Performance Alert: %@", issue);
+        }
+    }
+}
+
++ (void)generatePerformanceReport {
+    NSMutableString *report = [NSMutableString stringWithString:@"\n📊 AHI BodyScan Performance Report\n"];
+    [report appendString:@"=====================================\n"];
+    
+    // Get current metrics
+    NSDictionary *metrics = [[AHIBSPerformanceMonitor sharedMonitor] getPerformanceMetrics];
+    
+    [report appendFormat:@"Memory Usage: %.1f MB\n", 
+     [metrics[@"current_memory_mb"] floatValue]];
+    [report appendFormat:@"Peak Memory: %.1f MB\n", 
+     [metrics[@"peak_memory_mb"] floatValue]];
+    
+    NSDictionary *durations = metrics[@"operation_durations"];
+    for (NSString *operation in durations) {
+        [report appendFormat:@"%@: %.1f ms\n", operation, [durations[operation] floatValue]];
+    }
+    
+    // Device information
+    [report appendFormat:@"\nDevice: %@\n", [UIDevice currentDevice].model];
+    [report appendFormat:@"iOS Version: %@\n", [UIDevice currentDevice].systemVersion];
+    [report appendFormat:@"Total Memory: %.1f GB\n", 
+     [NSProcessInfo processInfo].physicalMemory / (1024.0 * 1024.0 * 1024.0)];
+    
+    NSLog(@"%@", report);
+}
+```
+
+This comprehensive BRD now includes all the critical information from the separate documentation files, providing a single, complete reference for the AHI BodyScan iOS SDK project. The document covers security vulnerabilities, implementation guides, testing frameworks, and maintenance procedures needed for successful development and deployment.

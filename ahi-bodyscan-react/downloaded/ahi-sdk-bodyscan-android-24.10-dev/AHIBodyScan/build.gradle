@@ -1,0 +1,195 @@
+plugins {
+    id "com.android.library"
+    id "kotlin-android"
+    id "jacoco"
+    id "maven-publish"
+    id "org.jetbrains.dokka"
+    id "kotlin-parcelize"
+    id "com.kezong.fat-aar"
+}
+
+def gradleToolsDir = "$project.projectDir/../ahi-sdk-build-tools-android/gradle-scripts"
+apply from: "$gradleToolsDir/script-jacoco.gradle"
+apply from: "$gradleToolsDir/publishing.gradle"
+apply from: "$gradleToolsDir/documentation.gradle"
+apply from: "$gradleToolsDir/utilities.gradle"
+
+def usingLocalCommonRepo() {
+    return localPropertyDefined("ahi_sdk_common_android_local_dir")
+}
+
+def getLocalCommonRepo() {
+    return gradle.ext.ahi_sdk_common_android_local_dir
+}
+
+def publishing = false
+
+android {
+    compileSdkVersion 33
+    ndkVersion "23.1.7779620"
+
+    def SDK_VERSION_CODE = "cat VERSION.txt".execute().text.trim()
+
+    defaultConfig {
+        minSdk 26
+        targetSdk 33
+        buildConfigField 'String', 'SDK_VERSION_CODE', "\"${SDK_VERSION_CODE}\""
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        consumerProguardFiles "consumer-rules.pro"
+        externalNativeBuild {
+            cmake {
+                cppFlags "-frtti -fexceptions"
+                abiFilters "x86", "x86_64", "armeabi-v7a", "arm64-v8a"
+                arguments "-DOpenCV_DIR=" + "${projectDir}/../OpenCV-android-sdk" + "/sdk/native"
+            }
+            if (usingLocalCommonRepo()) {
+                cmake {
+                    arguments "-DANDROID_STL=c++_shared", "-DCPP_UTILS_PATH=${buildDir}/jniLibs", "-DLOCAL_COMMON_DIR=${getLocalCommonRepo()}"
+                }
+            } else {
+                cmake {
+                    arguments "-DANDROID_STL=c++_shared", "-DCPP_UTILS_PATH=${buildDir}/jniLibs"
+                }
+            }
+        }
+        vectorDrawables {
+            useSupportLibrary true
+        }
+        def runTasks = gradle.startParameter.taskNames
+        if (runTasks.toString().contains('publish')) {
+            publishing = true
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    kotlinOptions {
+        jvmTarget = "1.8"
+    }
+    if (!usingLocalCommonRepo()) {
+        buildFeatures.prefab = true
+    }
+    buildFeatures {
+        compose true
+    }
+    composeOptions {
+        kotlinCompilerExtensionVersion compose_version
+        kotlinCompilerVersion "1.6.10"
+    }
+    packagingOptions {
+        resources {
+            excludes += "/META-INF/{AL2.0,LGPL2.1}"
+        }
+    }
+    externalNativeBuild {
+        cmake {
+            path file("src/main/cpp/CMakeLists.txt")
+            version "3.18.1"
+        }
+    }
+    buildFeatures {
+        viewBinding true
+    }
+}
+
+fataar {
+    /**
+     * If transitive is true, local jar module and remote library's dependencies will be embed. (local aar module does not support)
+     * If transitive is false, just embed first level dependency
+     * Default value is false
+     * @since 1.3.0
+     */
+    transitive = true
+}
+
+dependencies {
+    api fileTree(dir: 'libs', include: ['*.jar'])
+    implementation "androidx.core:core-ktx:1.9.0"
+    implementation "androidx.appcompat:appcompat:1.7.0-alpha01"
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:$coroutines_version"
+    implementation "androidx.work:work-runtime-ktx:$work_version"
+    implementation "androidx.lifecycle:lifecycle-runtime-ktx:2.5.1"
+    implementation "com.google.android.material:material:1.9.0-alpha01"
+    implementation "androidx.constraintlayout:constraintlayout:2.1.4"
+
+    // Compose
+    def composeBom = platform('androidx.compose:compose-bom:2022.10.00')
+    implementation composeBom
+    androidTestImplementation composeBom
+    implementation "androidx.compose.ui:ui"
+    implementation "androidx.compose.material3:material3"
+    implementation "androidx.compose.ui:ui-tooling-preview"
+    implementation "androidx.compose.runtime:runtime-livedata"
+    implementation 'androidx.activity:activity-compose:1.6.1'
+
+    if (usingLocalCommonRepo()) {
+        implementation project(path: ":ahi-sdk-common-android")
+    } else {
+        implementation "com.advancedhumanimaging.sdk:ahi-sdk-common:$getBranchVersion.+"
+    }
+    if (localPropertyDefined("ahi_sdk_multiscan_android_local_dir")) {
+        implementation project(":ahi-sdk-multiscan-android")
+    } else {
+        implementation "com.advancedhumanimaging.sdk:ahi-sdk-multiscan:$getBranchVersion.+"
+    }
+    if (publishing) {
+        embed project(":Common")
+        embed project(":PartResources")
+        embed project(":PartUI")
+        embed project(":PartAlignment")
+        embed project(":PartCamera")
+        embed project(":PartContour")
+        embed project(":PartPoseDetection")
+        embed project(":PartPoseInspection")
+        embed project(":PartSegmentation")
+        embed project(":PartClassification")
+        embed project(":PartInversion")
+
+        /* Transitive dependencies from sub-parts */
+        // Camera
+        implementation "androidx.camera:camera-core:${camerax_version}"
+        implementation "androidx.camera:camera-camera2:${camerax_version}"
+        implementation "androidx.camera:camera-lifecycle:${camerax_version}"
+        implementation "androidx.camera:camera-view:${camerax_version}"
+        // Pose detection with accurate models
+        implementation 'com.google.mlkit:pose-detection:18.0.0-beta3'
+        // Face detection
+        implementation 'com.google.mlkit:face-detection:16.1.5'
+    } else {
+        api project(":Common")
+        implementation project(":PartResources")
+        implementation project(":PartUI")
+        implementation project(":PartAlignment")
+        implementation project(":PartCamera")
+        implementation project(":PartContour")
+        implementation project(":PartPoseDetection")
+        implementation project(":PartPoseInspection")
+        implementation project(":PartSegmentation")
+        implementation project(":PartClassification")
+        implementation project(":PartInversion")
+    }
+
+    // Local Unit Tests
+    def mockk_version = "1.12.2"
+    testImplementation "io.mockk:mockk:$mockk_version"
+    testImplementation "io.mockk:mockk-agent-jvm:$mockk_version"
+    testImplementation "org.jetbrains.kotlinx:kotlinx-coroutines-test:$coroutines_version"
+    testImplementation "org.junit.jupiter:junit-jupiter-api:5.7.1"
+    testImplementation "org.junit.jupiter:junit-jupiter-engine:5.7.1"
+    testImplementation "org.junit.jupiter:junit-jupiter-params:5.7.1"
+
+    // Instrumented Unit Tests
+    androidTestImplementation "androidx.test.ext:junit:1.1.5"
+    androidTestImplementation "androidx.test.espresso:espresso-core:3.5.1"
+    androidTestImplementation "androidx.test:runner:1.5.2"
+    androidTestImplementation "androidx.test:rules:1.5.0"
+}

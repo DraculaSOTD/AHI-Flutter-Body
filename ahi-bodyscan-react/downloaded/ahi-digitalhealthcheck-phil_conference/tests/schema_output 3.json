@@ -1,0 +1,773 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties":
+    {
+        "inputs":
+        {
+            "type": "object",
+            "properties":
+            {
+                "enum_ent_sex":
+                {
+                    "type": "string",
+                    "enum":
+                    [
+                        "male",
+                        "female"
+                    ],
+                    "description": "The biological sex of the user. (Required)"
+                },
+                "yr_ent_age":
+                {
+                    "type": "integer",
+                    "minimum": 18,
+                    "maximum": 75,
+                    "description": "The age of the user in years. (Required)"
+                },
+                "cm_ent_height":
+                {
+                    "type": "integer",
+                    "minimum": 100,
+                    "maximum": 250,
+                    "description": "The height of the user in centimeters. (Either the heigth in centimeters or in inches is required)"
+                },
+                "in_ent_height":
+                {
+                    "type": "number",
+                    "minimum": 39.4,
+                    "maximum": 98.4,
+                    "description": "The height of the user in inches. (Either the heigth in centimeters or in inches is required)"
+                },
+                "kg_ent_weight":
+                {
+                    "type": "number",
+                    "minimum": 30.0,
+                    "maximum": 250.0,
+                    "description": "The weight of the user in kilograms. (Either the weigth in kilograms or in pounds is required)"
+                },
+                "lbs_ent_weight":
+                {
+                    "type": "number",
+                    "minimum": 66.14,
+                    "maximum": 551.15,
+                    "description": "The weight of the user in pounds. (Either the weigth in kilograms or in pounds is required)"
+                },
+                "enum_ent_smoker":
+                {
+                    "type": "string",
+                    "enum":
+                    [
+                        "current",
+                        "former",
+                        "never"
+                    ],
+                    "description": "Current smoking status of the user. (Required)"
+                },
+                "bool_ent_bpMedication":
+                {
+                    "type": "boolean",
+                    "description": "Whether the user is on blood pressure medication. (Required)"
+                },
+                "bool_ent_familyHistory":
+                {
+                    "type": "boolean",
+                    "description": "Whether the user has a family history of cardiovascular diseases. (Optional)"
+                },
+                "enum_ent_chronicMedication":
+                {
+                    "type": "string",
+                    "enum":
+                    [
+                        "none",
+                        "oneOrTwoDiseases",
+                        "threeOrMoreDiseases"
+                    ],
+                    "description": "Chronic medication usage: none, one or two diseases, three or more diseases. (Optional)"
+                },
+                "enum_ent_activityLevel":
+                {
+                    "type": "string",
+                    "enum":
+                    [
+                        "inactive",
+                        "exercise10Mins",
+                        "exercise20to60Mins",
+                        "exercise1to3Hours",
+                        "exerciseOver3Hours"
+                    ],
+                    "description": "The level of physical activity. (Optional)"
+                },
+                "mmHg_ent_systolicBP":
+                {
+                    "type": "number",
+                    "minimum": 40.0,
+                    "maximum": 220.0,
+                    "description": "Systolic blood pressure in mmHg. (Required IF diastolicBP present otherwise Optional)"
+                },
+                "mmHg_ent_diastolicBP":
+                {
+                    "type": "number",
+                    "minimum": 20.0,
+                    "maximum": 140.0,
+                    "description": "Diastolic blood pressure in mmHg. (Required IF SystolicBP present otherwise Optional)"
+                },
+                "arrayMmHg_ent_systolicBP":
+                {
+                    "type": "array",
+                    "items":
+                    {
+                        "type": "number",
+                        "minimum": 40.0,
+                        "maximum": 220.0
+                    },
+                    "minItems": 3,
+                    "maxItems": 3,
+                    "description": "List of 3 Systolic blood pressure in mmHg. (Required IF diastolicBP array present otherwise Optional)"
+                },
+                "arrayMmHg_ent_diastolicBP":
+                {
+                    "type": "array",
+                    "items":
+                    {
+                        "type": "number",
+                        "minimum": 20.0,
+                        "maximum": 140.0
+                    },
+                    "minItems": 3,
+                    "maxItems": 3,
+                    "description": "List of 3 Diastolic blood pressure in mmHg. (Required IF diastolicBP array present otherwise Optional)"
+                },
+                "bpm_ent_restingHeartRate":
+                {
+                    "type": "number",
+                    "minimum": 20.0,
+                    "maximum": 120.0,
+                    "description": "The resting heart rate in beats per minute. (Optional)"
+                },
+                "cm_ent_waistCircumference":
+                {
+                    "type": "number",
+                    "minimum": 30.0,
+                    "maximum": 300.0,
+                    "description": "Waist circumference in centimeters. (Optional)"
+                },
+                "cm_ent_hipCircumference":
+                {
+                    "type": "number",
+                    "minimum": 30.0,
+                    "maximum": 300.0,
+                    "description": "Hip circumference in centimeters. (Optional)"
+                },
+                "num_ent_bodyFatPercentage":
+                {
+                    "type": "number",
+                    "minimum": 4.0,
+                    "maximum": 90.0,
+                    "description": "Body fat percentage. (Optional)"
+                },
+                "bool_ent_stepTestCompleted":
+                {
+                    "type": "boolean",
+                    "description": "Whether a step test was completed. (Required IF stepTestHeartRate present otherwise Optional)"
+                },
+                "bpm_ent_stepTestHeartRate":
+                {
+                    "type": "number",
+                    "minimum": 50.0,
+                    "maximum": 300.0,
+                    "description": "Heart rate in beats per minute recorded after completing a step test. (Required IF stepTestCompleted present otherwise Optional)"
+                },
+                "arrayEnum_ent_anxietySurvey":
+                {
+                    "type": "object",
+                    "description": "Anxiety survey. If present each question is required.",
+                    "properties":
+                    {
+                        "enum_ent_feelingNervousOrAnxious":
+                        {
+                            "$ref": "#/definitions/surveyEnums",
+                            "description": "Over the last 2 weeks, how often have you been bothered by feeling nervous, anxious or on edge?"
+                        },
+                        "enum_ent_controlWorrying":
+                        {
+                            "$ref": "#/definitions/surveyEnums",
+                            "description": "Over the last 2 weeks, how often have you been bothered by not being able to stop or control worrying?"
+                        },
+                        "enum_ent_excessiveWorrying":
+                        {
+                            "$ref": "#/definitions/surveyEnums",
+                            "description": "Over the last 2 weeks, how often have you been bothered by worrying too much about different things?"
+                        },
+                        "enum_ent_troubleRelaxing":
+                        {
+                            "$ref": "#/definitions/surveyEnums",
+                            "description": "Over the last 2 weeks, how often have you been bothered by trouble relaxing?"
+                        },
+                        "enum_ent_restlessness":
+                        {
+                            "$ref": "#/definitions/surveyEnums",
+                            "description": "Over the last 2 weeks, how often have you been bothered by being so restless that it is hard to sit still?"
+                        },
+                        "enum_ent_easilyAnnoyedOrIrritable":
+                        {
+                            "$ref": "#/definitions/surveyEnums",
+                            "description": "Over the last 2 weeks, how often have you been bothered by becoming easily annoyed or irritable?"
+                        },
+                        "enum_ent_feelingAfraid":
+                        {
+                            "$ref": "#/definitions/surveyEnums",
+                            "description": "Over the last 2 weeks, how often have you been bothered by feeling afraid as if something awful might happen?"
+                        }
+                    },
+                    "required":
+                    [
+                        "enum_ent_feelingNervousOrAnxious",
+                        "enum_ent_controlWorrying",
+                        "enum_ent_excessiveWorrying",
+                        "enum_ent_troubleRelaxing",
+                        "enum_ent_restlessness",
+                        "enum_ent_easilyAnnoyedOrIrritable",
+                        "enum_ent_feelingAfraid"
+                    ],
+                    "additionalProperties": false
+                },
+                "arrayEnum_ent_depressionSurvey":
+                {
+                    "type": "object",
+                    "description": "Depression survey. If present each question is required.",
+                    "properties":
+                    {
+                        "enum_ent_lackOfInterest":
+                        {
+                            "$ref": "#/definitions/surveyEnums",
+                            "description": "Over the last 2 weeks, how often have you been bothered by little interest or pleasure in doing things?"
+                        },
+                        "enum_ent_feelingDepress":
+                        {
+                            "$ref": "#/definitions/surveyEnums",
+                            "description": "Over the last 2 weeks, how often have you been bothered by feeling down, depressed, or hopeless?"
+                        },
+                        "enum_ent_sleepProblems":
+                        {
+                            "$ref": "#/definitions/surveyEnums",
+                            "description": "Over the last 2 weeks, how often have you been bothered by trouble falling or staying asleep, or sleeping too much?"
+                        },
+                        "enum_ent_fatigue":
+                        {
+                            "$ref": "#/definitions/surveyEnums",
+                            "description": "Over the last 2 weeks, how often have you been bothered by feeling tired or having little energy?"
+                        },
+                        "enum_ent_eatingIssues":
+                        {
+                            "$ref": "#/definitions/surveyEnums",
+                            "description": "Over the last 2 weeks, how often have you been bothered by poor appetite or overeating?"
+                        },
+                        "enum_ent_lowSelfEsteem":
+                        {
+                            "$ref": "#/definitions/surveyEnums",
+                            "description": "Over the last 2 weeks, how often have you been bothered by feeling bad about yourself - or that you are a failure or have let yourself or your family down?"
+                        },
+                        "enum_ent_concentrationDifficulty":
+                        {
+                            "$ref": "#/definitions/surveyEnums",
+                            "description": "Over the last 2 weeks, how often have you been bothered by trouble concentrating on things, such as reading the newspaper or watching television?"
+                        },
+                        "enum_ent_psychomotorChanges":
+                        {
+                            "$ref": "#/definitions/surveyEnums",
+                            "description": "Over the last 2 weeks, how often have you been bothered by moving or speaking so slowly that other people could have noticed? Or the opposite - being so fidgety or restless that you have been moving around a lot more than usual."
+                        },
+                        "enum_ent_suicidalThoughts":
+                        {
+                            "$ref": "#/definitions/surveyEnums",
+                            "description": "Over the last 2 weeks, how often have you been bothered by thoughts that you would be better off dead, or of hurting yourself?"
+                        }
+                    },
+                    "required":
+                    [
+                        "enum_ent_lackOfInterest",
+                        "enum_ent_feelingDepress",
+                        "enum_ent_sleepProblems",
+                        "enum_ent_fatigue",
+                        "enum_ent_eatingIssues",
+                        "enum_ent_lowSelfEsteem",
+                        "enum_ent_concentrationDifficulty",
+                        "enum_ent_psychomotorChanges",
+                        "enum_ent_suicidalThoughts"
+                    ],
+                    "additionalProperties": false
+                }
+            }
+        },
+        "outputs":
+        {
+            "type": "object",
+            "properties":
+            {
+                "yr_raw_age":
+                {
+                    "type": "integer",
+                    "minimum": 18,
+                    "maximum": 75,
+                    "description": "The age of the user in years."
+                },
+                "cms_raw_bapwv":
+                {
+                    "type": "number",
+                    "minimum": 860.0,
+                    "maximum": 3400.0,
+                    "description": "Calculated arterial stiffness, the Brachial-ankle pulse wave velocity (baPWV), of the user (cm/s). Using the mean arterial pressure (MAP) and resting heart rate (RHR)"
+                },
+                "kgsm_raw_bmi":
+                {
+                    "type": "number",
+                    "minimum": 19.0,
+                    "maximum": 100.0,
+                    "description": "Calculated body mass index (BMI) of the user (kg/m2). Using the weight and height"
+                },
+                "bpm_raw_maxHR":
+                {
+                    "type": "number",
+                    "minimum": 155.0,
+                    "maximum": 196.0,
+                    "description": "Calculated maximum heart rate (maxHR) of the user (bpm). Using the age"
+                },
+                "num_raw_crpi":
+                {
+                    "type": "number",
+                    "minimum": 0.0,
+                    "maximum": 100.0,
+                    "description": "Calculated C-ReactiveProtein Index (CRPI) of the user. Using the biological sex, cardioFitness, and METs degree"
+                },
+                "int_raw_framinghamScore":
+                {
+                    "type": "integer",
+                    "minimum": 0.0,
+                    "maximum": 100.0,
+                    "description": "Calculated Framingham Score of the user. Using the age, biological sex, total cholesterol, HDL cholesterol, systolic blood pressure, smoking status, and blood pressure medication status"
+                },
+                "num_raw_hba1c":
+                {
+                    "type": "number",
+                    "minimum": 0.0,
+                    "maximum": 100.0,
+                    "description": "Calculated glycated hemoglobin (HbA1c) of the user (%). Using the biological sex, age, BMI, waist circumference, family history of diabetes, smoking status, and systolic blood pressure (sbp)"
+                },
+                "num_raw_lap":
+                {
+                    "type": "number",
+                    "minimum": 0.0,
+                    "maximum": 200.0,
+                    "description": "Calculated Lipid accumulation product (LAP) of the user. Using the biological sex, waist circumference, triglycerides"
+                },
+                "mmhg_raw_map":
+                {
+                    "type": "number",
+                    "minimum": 20.0,
+                    "maximum": 220.0,
+                    "description": "Calculated mean arterial pressure (MAP) of the user (mmHg). Using the systolic and diastolic blood pressure"
+                },
+                "num_raw_metSComp":
+                {
+                    "type": "number",
+                    "minimum": 0.0,
+                    "maximum": 5.0,
+                    "description": "Calculated metabolic syndrome components (MetSComp) of the user. Using the baPWV"
+                },
+                "num_raw_metSDegree":
+                {
+                    "type": "number",
+                    "minimum": 0.0,
+                    "maximum": 5.0,
+                    "description": "Calculated metabolic syndrome degree (MetSDegree) of the user. Using the waistToHeightRatio and waistToHipRatio"
+                },
+                "num_raw_fitness1":
+                {
+                    "type": "number",
+                    "minimum": 10.0,
+                    "maximum": 80.0,
+                    "description": "Calculated fitness1 of the user (mL/kg/min). Using the max Heart Rate (maxHR) and resting heart rate (RHR)"
+                },
+                "num_raw_fitness2":
+                {
+                    "type": "number",
+                    "minimum": 10.0,
+                    "maximum": 80.0,
+                    "description": "Calculated fitness2 of the user (mL/kg/min). Using the age, sex, activity level, bmi, resting heart rate (RHR)"
+                },
+                "num_raw_fitnessAvg":
+                {
+                    "type": "number",
+                    "minimum": 10.0,
+                    "maximum": 80.0,
+                    "description": "Calculated fitness1 and fitness2 average of the user (mL/kg/min). Using the fitness1 and fitness2"
+                },
+                "num_raw_cardioFitness3":
+                {
+                    "type": "number",
+                    "minimum": 10.0,
+                    "maximum": 80.0,
+                    "description": "Calculated cardio fitness value of the user (mL/kg/min)."
+                },
+                "num_raw_cardioFitness4":
+                {
+                    "type": "number",
+                    "minimum": 10.0,
+                    "maximum": 80.0,
+                    "description": "Calculated cardio fitness dwonstream value of the user (mL/kg/min)."
+                },
+                "num_raw_tenYrCvd":
+                {
+                    "type": "integer",
+                    "minimum": 0.0,
+                    "maximum": 40.0,
+                    "description": "Calculated 10 year cardiovascular disease value of the user (%)."
+                },
+                "array_raw_corrHdlC":
+                {
+                    "type": "array",
+                    "items":
+                    {
+                        "type": "number",
+                        "minimum": 0.0,
+                        "maximum": 1.0
+                    },
+                    "minItems": 3,
+                    "maxItems": 3,
+                    "description": "Calculated probability distribution of the Hdl Cholesterol of the user. Using the age, biological sex, cardio respiratory fitness"
+                },
+                "mmoll_raw_corrHdlMean":
+                {
+                    "type": "number",
+                    "minimum": 0.0,
+                    "maximum": 20.0,
+                    "description": "mean value of the Hdl Cholesterol of the user. Using the age, biological sex, cardio respiratory fitness"
+                },
+                "mmoll_raw_corrHdlStdev":
+                {
+                    "type": "number",
+                    "description": "standard deviation value of the Hdl Cholesterol of the user. Using the age, biological sex, cardio respiratory fitness"
+                },
+                "mmoll_adj_corrHdlRange":
+                {
+                    "type": "array",
+                    "items":
+                    {
+                        "type": "number",
+                        "minimum": 0.0,
+                        "maximum": 20.0
+                    },
+                    "minItems": 2,
+                    "maxItems": 2,
+                    "description": "Calculated range values of the Hdl Cholesterol of the user. Using the age, biological sex, cardio respiratory fitness"
+                },
+                "array_raw_corrLdlC":
+                {
+                    "type": "array",
+                    "items":
+                    {
+                        "type": "number",
+                        "minimum": 0.0,
+                        "maximum": 1.0
+                    },
+                    "minItems": 3,
+                    "maxItems": 3,
+                    "description": "Calculated probability distribution of the Ldl Cholesterol of the user. Using the age, biological sex, cardio respiratory fitness"
+                },
+                "mmoll_raw_corrLdlMean":
+                {
+                    "type": "number",
+                    "minimum": 0.0,
+                    "maximum": 20.0,
+                    "description": "mean value of the Ldl Cholesterol of the user. Using the age, biological sex, cardio respiratory fitness"
+                },
+                "mmoll_raw_corrLdlStdev":
+                {
+                    "type": "number",
+                    "description": "standard deviation value of the Ldl Cholesterol of the user. Using the age, biological sex, cardio respiratory fitness"
+                },
+                "mmoll_adj_corrLdlRange":
+                {
+                    "type": "array",
+                    "items":
+                    {
+                        "type": "number",
+                        "minimum": 0.0,
+                        "maximum": 20.0
+                    },
+                    "minItems": 2,
+                    "maxItems": 2,
+                    "description": "Calculated range values of the Ldl Cholesterol of the user. Using the age, biological sex, cardio respiratory fitness"
+                },
+                "array_raw_corrTotalCholesterol":
+                {
+                    "type": "array",
+                    "items":
+                    {
+                        "type": "number",
+                        "minimum": 0.0,
+                        "maximum": 1.0
+                    },
+                    "minItems": 3,
+                    "maxItems": 3,
+                    "description": "Calculated probability distribution of the total Cholesterol of the user. Using the age, biological sex, cardio respiratory fitness"
+                },
+                "mmoll_raw_corrTotalCholesterolMean":
+                {
+                    "type": "number",
+                    "minimum": 0.0,
+                    "maximum": 20.0,
+                    "description": "mean value of the total Cholesterol of the user. Using the age, biological sex, cardio respiratory fitness"
+                },
+                "mmoll_raw_corrTotalCholesterolStdev":
+                {
+                    "type": "number",
+                    "description": "standard deviation value of the total Cholesterol of the user. Using the age, biological sex, cardio respiratory fitness"
+                },
+                "mmoll_adj_corrTotalCholesterolRange":
+                {
+                    "type": "array",
+                    "items":
+                    {
+                        "type": "number",
+                        "minimum": 0.0,
+                        "maximum": 20.0
+                    },
+                    "minItems": 2,
+                    "maxItems": 2,
+                    "description": "Calculated range values of the total Cholesterol of the user. Using the age, biological sex, cardio respiratory fitness"
+                },
+                "array_raw_corrTriglycerides":
+                {
+                    "type": "array",
+                    "items":
+                    {
+                        "type": "number",
+                        "minimum": 0.0,
+                        "maximum": 1.0
+                    },
+                    "minItems": 3,
+                    "maxItems": 3,
+                    "description": "Calculated probability distribution of the triglycerides of the user. Using the age, biological sex, cardio respiratory fitness"
+                },
+                "mmoll_raw_corrTriglyceridesMean":
+                {
+                    "type": "number",
+                    "minimum": 0.0,
+                    "maximum": 20.0,
+                    "description": "mean value of the triglycerides of the user. Using the age, biological sex, cardio respiratory fitness"
+                },
+                "mmoll_raw_corrTriglyceridesStdev":
+                {
+                    "type": "number",
+                    "description": "standard deviation value of the triglycerides of the user. Using the age, biological sex, cardio respiratory fitness"
+                },
+                "mmoll_adj_corrTriglyceridesRange":
+                {
+                    "type": "array",
+                    "items":
+                    {
+                        "type": "number",
+                        "maximum": 20.0
+                    },
+                    "minItems": 2,
+                    "maxItems": 2,
+                    "description": "Calculated range values of the triglycerides of the user. Using the age, biological sex, cardio respiratory fitness"
+                },
+                "num_raw_vai":
+                {
+                    "type": "number",
+                    "minimum": 0.0,
+                    "maximum": 50.0,
+                    "description": "Calculated visceral adiposity index (VAI) of the user."
+                },
+                "num_raw_waistToHeightRatio":
+                {
+                    "type": "number",
+                    "description": "Calculated waist to height ratio of the user. Using the waist circumference and height"
+                },
+                "num_raw_waistToHipRatio":
+                {
+                    "type": "number",
+                    "description": "Calculated waist to height ratio of the user. Using the waist circumference and hip circumference"
+                },
+                "int_raw_anxietyScore":
+                {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 21,
+                    "description": "Calculated anxiety score of the user."
+                },
+                "int_raw_depressionScore":
+                {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 27,
+                    "description": "Calculated depression score of the user."
+                },
+                "array_raw_bpDistribution":
+                {
+                    "type": "array",
+                    "items":
+                    {
+                        "type": "number",
+                        "maximum": 1.0
+                    },
+                    "minItems": 6,
+                    "maxItems": 6,
+                    "description": "Calculated probability distribution of the blood pressure of the user (Hypotensive, Normal, Elevated, Stage 1, Stage 2, Crisis). Using the diastolic BP list and Systolic BP list"
+                },
+                "date_raw_assessmentCalculation":
+                {
+                    "type": "string",
+                    "format": "date",
+                    "description": "date when the assessment calculations/lambda call is made, format: YYYY-MM-DD (1990-05-20)"
+                }
+            }
+        },
+        "risks":
+        {
+            "type": "object",
+            "properties":
+            {
+                "risk_adj_activityLevel":
+                {
+                    "$ref": "#/definitions/riskValueEnums"
+                },
+                "risk_adj_bapwv":
+                {
+                    "$ref": "#/definitions/riskValueEnums"
+                },
+                "risk_adj_bmi":
+                {
+                    "$ref": "#/definitions/riskValueEnums"
+                },
+                "risk_adj_bloodPressure":
+                {
+                    "$ref": "#/definitions/riskValueEnums"
+                },
+                "risk_adj_bodyFatPercentage":
+                {
+                    "$ref": "#/definitions/riskValueEnums"
+                },
+                "risk_adj_crpi":
+                {
+                    "$ref": "#/definitions/riskValueEnums"
+                },
+                "risk_adj_chronicMedication":
+                {
+                    "$ref": "#/definitions/riskValueEnums"
+                },
+                "risk_adj_familyHistory":
+                {
+                    "$ref": "#/definitions/riskValueEnums"
+                },
+                "risk_adj_framinghamScore":
+                {
+                    "$ref": "#/definitions/riskValueEnums"
+                },
+                "risk_adj_hdlC":
+                {
+                    "$ref": "#/definitions/riskValueEnums"
+                },
+                "risk_adj_hba1c":
+                {
+                    "$ref": "#/definitions/riskValueEnums"
+                },
+                "risk_adj_ldlC":
+                {
+                    "$ref": "#/definitions/riskValueEnums"
+                },
+                "risk_adj_lap":
+                {
+                    "$ref": "#/definitions/riskValueEnums"
+                },
+                "risk_adj_metSComp":
+                {
+                    "$ref": "#/definitions/riskValueEnums"
+                },
+                "risk_adj_metSDegree":
+                {
+                    "$ref": "#/definitions/riskValueEnums"
+                },
+                "risk_adj_restingFitness":
+                {
+                    "$ref": "#/definitions/riskValueEnums"
+                },
+                "risk_adj_restingHeartRate":
+                {
+                    "$ref": "#/definitions/riskValueEnums"
+                },
+                "risk_adj_smokerStatus":
+                {
+                    "$ref": "#/definitions/riskValueEnums"
+                },
+                "risk_adj_crfLevel":
+                {
+                    "$ref": "#/definitions/riskValueEnums"
+                },
+                "risk_adj_cardioFitness":
+                {
+                    "$ref": "#/definitions/riskValueEnums"
+                },
+                "risk_adj_tenYrCvd":
+                {
+                    "$ref": "#/definitions/riskValueEnums"
+                },
+                "risk_adj_totalCholesterol":
+                {
+                    "$ref": "#/definitions/riskValueEnums"
+                },
+                "risk_adj_triglycerides":
+                {
+                    "$ref": "#/definitions/riskValueEnums"
+                },
+                "risk_adj_vai":
+                {
+                    "$ref": "#/definitions/riskValueEnums"
+                },
+                "risk_adj_waistToHeightRatio":
+                {
+                    "$ref": "#/definitions/riskValueEnums"
+                },
+                "risk_adj_waistToHipRatio":
+                {
+                    "$ref": "#/definitions/riskValueEnums"
+                },
+                "risk_adj_anxiety":
+                {
+                    "$ref": "#/definitions/riskValueEnums"
+                },
+                "risk_adj_depression":
+                {
+                    "$ref": "#/definitions/riskValueEnums"
+                }
+            }
+        }
+    },
+    "definitions":
+    {
+        "answerEnums":
+        {
+            "type": "string",
+            "enum":
+            [
+                "notAtAll",
+                "severalDays",
+                "moreThanHalfTheDays",
+                "nearlyEveryDay"
+            ]
+        },
+        "riskValueEnums":
+        {
+            "type": "string",
+            "enum":
+            [
+                "low",
+                "medium",
+                "high"
+            ]
+        }
+    }
+}

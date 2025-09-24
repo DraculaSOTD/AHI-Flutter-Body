@@ -1,0 +1,66 @@
+body {
+  margin: 0;
+  padding: 0;
+  background-color: black;
+  overflow: hidden;
+}
+
+#container {
+  position: relative;
+}
+
+#container video,
+#container canvas {
+  position: absolute;
+  top: 0;
+  height: 100vh; /* Fallback */
+  height: 100dvh; /* Will override if supported */
+  max-height: 705px;
+  /* min-height: 705px; */
+}
+
+#container video {
+  transform: translateX(-50%) scaleX(-1);
+  z-index: 10;
+  left: 50%;
+}
+
+#container #canvas {
+  transform: translateX(-50%);
+  z-index: 50;
+  left: 50%;
+}
+
+#container #chart-overlay {
+  margin: 0 auto;
+  width: 160px;
+  height: 60px;
+  z-index: 100;
+  position: relative;
+  transform: translateX(70px);
+}
+
+#container #chart-overlay canvas {
+  width: 100px;
+  height: 50px;
+  position: absolute;
+  top: 5px;
+  right: 0;
+  clip-path: inset(
+    0 0 0 2px
+  ); /* Clip the LHS pixels to get rid of odd chart behaviour. */
+  transition: opacity 0.5s ease-in-out;
+}
+
+@media (min-width: 940px) {
+  #container {
+    max-width: 940px;
+    min-height: auto;
+    margin: 0 auto;
+  }
+
+  #container video {
+    height: auto;
+    width: 100%;
+  }
+}
